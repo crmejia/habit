@@ -26,8 +26,12 @@ func (ht *Tracker) FetchHabit(name string) Habit {
 	}
 
 	if SameDay(habit.Period, time.Now()) {
+		//increase streak
 		habit.Streak++
 		habit.Period = Tomorrow()
+		habit.message = fmt.Sprintf(StreakHabit, habit.Name, habit.Streak)
+	} else if SameDay(habit.Period, Tomorrow()) {
+		//repeated streak
 		habit.message = fmt.Sprintf(StreakHabit, habit.Name, habit.Streak)
 	} else if !SameDay(habit.Period, time.Now()) && !SameDay(habit.Period, Tomorrow()) {
 		//streak lost
@@ -49,11 +53,6 @@ const (
 	StreakHabit = "Nice work: you've done the habit '%s' for %d days in a row now. Keep it up!"
 	BrokeStreak = "You last did the habit '%s' %.0f days ago, so you're starting a new streak today. Good luck!"
 )
-
-//var messages = map[string]string{
-//	"newHabit": "Good luck with your new habit '%s'! Don't forget to do it again\ntomorrow.",
-//	1:          "Nice work: you've done the habit '%s' for %s days in a row now.\nKeep it up!",
-//}
 
 func Tomorrow() time.Time {
 	return time.Now().Add(24 * time.Hour)

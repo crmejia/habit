@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-func TestHabitSetsMessageCorrectlyForNewHabit(t *testing.T) {
+func TestFetchHabitSetsMessageCorrectlyForNewHabit(t *testing.T) {
 	ht := habit.Tracker{}
 	h := ht.FetchHabit("piano")
 	want := "Good luck with your new habit 'piano'! Don't forget to do it again tomorrow."
@@ -16,12 +16,11 @@ func TestHabitSetsMessageCorrectlyForNewHabit(t *testing.T) {
 	}
 
 }
-func TestHabitSetsMessageCorrectlyForStreakBrokenStreak(t *testing.T) {
+func TestFetchHabitSetsMessageCorrectlyForStreakBrokenStreak(t *testing.T) {
 	testCases := []struct {
 		want  string
 		habit habit.Habit
 	}{
-		//{want: "Good luck with your new habit 'piano'! Don't forget to do it again tomorrow.", habit: habit.Habit{Name: "piano", Streak: 0}},
 		{want: "Nice work: you've done the habit 'surf' for 4 days in a row now. Keep it up!", habit: habit.Habit{Name: "surf", Streak: 3, Period: time.Now()}},
 		{want: "You last did the habit 'running' 10 days ago, so you're starting a new streak today. Good luck!", habit: habit.Habit{Name: "running", Streak: 10, Period: time.Now().Add(-10 * 24 * time.Hour)}},
 	}
@@ -33,6 +32,22 @@ func TestHabitSetsMessageCorrectlyForStreakBrokenStreak(t *testing.T) {
 		if tc.want != got {
 			t.Errorf("For %d day streak: want the message to be:\n%s,\n got\n%s", tc.habit.Streak, tc.want, got)
 		}
+	}
+}
+
+func TestFetchHabitSetsMessageCorrectlyForAlreadyIncreasedStreak(t *testing.T) {
+	h := habit.Habit{
+		Name:   "piano",
+		Streak: 2,
+		Period: habit.Tomorrow(),
+	}
+	ht := habit.Tracker{}
+	ht[h.Name] = h
+	h = ht.FetchHabit("piano")
+	want := "Nice work: you've done the habit 'piano' for 2 days in a row now. Keep it up!"
+	got := h.String()
+	if want != got {
+		t.Errorf("For %d day streak: want the message to be:\n%s,\n got\n%s", h.Streak, want, got)
 	}
 }
 
