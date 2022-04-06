@@ -16,6 +16,7 @@ func TestFetchHabitSetsMessageCorrectlyForNewHabit(t *testing.T) {
 	}
 
 }
+
 func TestFetchHabitSetsMessageCorrectlyForStreakBrokenStreak(t *testing.T) {
 	testCases := []struct {
 		want  string
