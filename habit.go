@@ -17,7 +17,7 @@ type Habit struct {
 	message string
 }
 
-type Tracker map[string]Habit
+type Tracker map[string]*Habit
 
 func NewTracker() Tracker {
 	tracker := Tracker{}
@@ -29,10 +29,10 @@ func NewTracker() Tracker {
 	return tracker
 }
 
-func (ht *Tracker) FetchHabit(name string) Habit {
+func (ht *Tracker) FetchHabit(name string) *Habit {
 	habit, ok := (*ht)[name]
 	if !ok { //Create
-		habit = Habit{
+		habit = &Habit{
 			Name:    name,
 			Period:  Tomorrow(),
 			message: fmt.Sprintf(NewHabit, name),
