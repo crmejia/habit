@@ -21,7 +21,8 @@ type Tracker map[string]Habit
 
 func NewTracker() Tracker {
 	tracker := Tracker{}
-	err := tracker.loadFile()
+	filename := os.Getenv("HOME") + "/.habitTracker"
+	err := tracker.loadFile(filename)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -83,8 +84,15 @@ func SameDay(d1, d2 time.Time) bool {
 
 var trackerFile *os.File
 
-func (ht *Tracker) loadFile() error {
-	filename := os.Getenv("HOME") + ".habitTracker"
+//TODO test loading
+//why we need to test this?
+//loading from a file | db is a fundamental operation but it needs to be tested just to make sure we don't
+//ship utterly broken software
+//how to test this:
+// divide the two behaviors that are bundled together here:
+// reading the file | db
+// parse the bytes to a map
+func (ht *Tracker) loadFile(filename string) error {
 	_, err := os.Stat(filename)
 
 	if err != nil {
