@@ -2,6 +2,7 @@ package habit
 
 import (
 	"fmt"
+	"log"
 	"os"
 )
 
@@ -22,6 +23,9 @@ func RunCLI() {
 
 	ht := NewTracker()
 	habit := ht.FetchHabit(os.Args[1])
-	ht.writeFile()
+	err := ht.writeFile()
+	if err != nil {
+		log.Fatal(err)
+	}
 	fmt.Println(habit)
 }

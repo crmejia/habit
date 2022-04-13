@@ -93,17 +93,8 @@ var trackerFile *os.File
 // reading the file | db
 // parse the bytes to a map
 func (ht *Tracker) loadFile(filename string) error {
-	_, err := os.Stat(filename)
-
-	if err != nil {
-		trackerFile, err = os.Create(filename)
-		if err != nil {
-			log.Fatal(err)
-		}
-		return nil
-	}
-
-	trackerFile, err = os.Open(filename)
+	var err error
+	trackerFile, err = os.OpenFile(filename, os.O_CREATE|os.O_RDWR, 0600)
 	if err != nil {
 		return err
 	}
@@ -112,9 +103,11 @@ func (ht *Tracker) loadFile(filename string) error {
 	if err != nil {
 		return err
 	}
-	err = json.Unmarshal(fileBytes, ht)
-	if err != nil {
-		return err
+	if len(fileBytes) > 0 {
+		err = json.Unmarshal(fileBytes, ht)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -123,10 +116,12 @@ func (ht *Tracker) writeFile() error {
 	if trackerFile == nil {
 		return errors.New("file is not set")
 	}
-	fileBytes, err := json.Marshal(*ht)
+	fileBytes, err := json.Marshal(ht)
 	if err != nil {
 		return err
 	}
+	trackerFile.Truncate(0)
+	trackerFile.Seek(0, 0)
 	_, err = trackerFile.Write(fileBytes)
 	if err != nil {
 		return err
