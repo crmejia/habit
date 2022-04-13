@@ -16,12 +16,11 @@ func RunCLI() {
 		return
 	}
 
+	ht := NewTracker()
 	if len(os.Args) == 1 {
-		fmt.Println("display all habits")
+		fmt.Print(ht.AllHabits())
 		return
 	}
-
-	ht := NewTracker()
 	habit := ht.FetchHabit(os.Args[1])
 	err := ht.writeFile()
 	if err != nil {

@@ -47,7 +47,7 @@ func TestFetchHabitSetsMessageCorrectlyForAlreadyIncreasedStreak(t *testing.T) {
 		},
 	}
 	h := ht.FetchHabit("piano")
-	want := "Nice work: you've done the habit 'piano' for 2 days in a row now. Keep it up!"
+	want := "You already logged 'piano' today. Keep it up!"
 	got := h.String()
 	if want != got {
 		t.Errorf("For %d day streak: want the message to be:\n%s,\n got\n%s", h.Streak, want, got)
@@ -126,5 +126,21 @@ func TestFetchHabitResetsStreak(t *testing.T) {
 	got := h.Streak
 	if want != got {
 		t.Errorf("want streak to reset to %d, got %d", want, got)
+	}
+}
+
+func TestAllHabitsReportsCurrentStreaks(t *testing.T) {
+	t.Parallel()
+	tracker := habit.Tracker{
+		"piano": &habit.Habit{
+			Name:   "piano",
+			Streak: 8,
+			Period: habit.Tomorrow(),
+		},
+	}
+	want := "You're currently on a 8-day streak for 'piano'. Stick to it!\n"
+	got := tracker.AllHabits()
+	if want != got {
+		t.Errorf("want:\n %s \ngot:\n %s", want, got)
 	}
 }

@@ -35,7 +35,7 @@ func (ht *Tracker) FetchHabit(name string) *Habit {
 		habit = &Habit{
 			Name:    name,
 			Period:  Tomorrow(),
-			message: fmt.Sprintf(NewHabit, name),
+			message: fmt.Sprintf(newHabit, name),
 		}
 		(*ht)[habit.Name] = habit
 		return habit
@@ -45,29 +45,40 @@ func (ht *Tracker) FetchHabit(name string) *Habit {
 		//increase streak
 		habit.Streak++
 		habit.Period = Tomorrow()
-		habit.message = fmt.Sprintf(StreakHabit, habit.Name, habit.Streak)
+		habit.message = fmt.Sprintf(streakHabit, habit.Name, habit.Streak)
 	} else if SameDay(habit.Period, Tomorrow()) {
-		//repeated streak
-		habit.message = fmt.Sprintf(StreakHabit, habit.Name, habit.Streak)
+		//repeated habit
+		habit.message = fmt.Sprintf(repeatedHabit, habit.Name)
 	} else if !SameDay(habit.Period, time.Now()) && !SameDay(habit.Period, Tomorrow()) {
 		//streak lost
 		sinceDuration := time.Since(habit.Period)
 		sinceDays := sinceDuration.Hours() / 24.0
-		habit.message = fmt.Sprintf(BrokeStreak, habit.Name, sinceDays)
+		habit.message = fmt.Sprintf(brokeStreak, habit.Name, sinceDays)
 		habit.Streak = 0
 		habit.Period = Tomorrow()
 	}
 
 	return habit
 }
+
+func (ht *Tracker) AllHabits() string {
+	var message string
+	for _, habit := range *ht {
+		message += fmt.Sprintf(habitStatus+"\n", habit.Streak, habit.Name)
+	}
+	return message
+}
+
 func (h Habit) String() string {
 	return h.message
 }
 
 const (
-	NewHabit    = "Good luck with your new habit '%s'! Don't forget to do it again tomorrow."
-	StreakHabit = "Nice work: you've done the habit '%s' for %d days in a row now. Keep it up!"
-	BrokeStreak = "You last did the habit '%s' %.0f days ago, so you're starting a new streak today. Good luck!"
+	newHabit      = "Good luck with your new habit '%s'! Don't forget to do it again tomorrow."
+	repeatedHabit = "You already logged '%s' today. Keep it up!"
+	streakHabit   = "Nice work: you've done the habit '%s' for %d days in a row now. Keep it up!"
+	brokeStreak   = "You last did the habit '%s' %.0f days ago, so you're starting a new streak today. Good luck!"
+	habitStatus   = "You're currently on a %d-day streak for '%s'. Stick to it!"
 )
 
 func Tomorrow() time.Time {
