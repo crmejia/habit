@@ -1,13 +1,16 @@
 package habit
 
 import (
-	"encoding/json"
-	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"time"
+)
+
+import (
+	"encoding/json"
+	"errors"
+	"io/ioutil"
 )
 
 type Habit struct {
