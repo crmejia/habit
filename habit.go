@@ -14,10 +14,11 @@ import (
 )
 
 type Habit struct {
-	Name    string
-	Streak  int
-	Period  time.Time
-	message string
+	Name     string
+	Streak   int
+	Period   time.Time
+	Interval time.Duration
+	message  string
 }
 
 type Tracker map[string]*Habit
@@ -64,6 +65,19 @@ func (ht *Tracker) FetchHabit(name string) *Habit {
 	return habit
 }
 
+func (ht *Tracker) CreateHabit(habit *Habit) error {
+	_, ok := (*ht)[habit.Name]
+	if ok {
+		return errors.New("habit already exists")
+	}
+	if !validInterval[habit.Interval] {
+		return errors.New("not a valid interval")
+	}
+	habit.Period = time.Now().Add(habit.Interval)
+	habit.message = fmt.Sprintf(newHabit, habit.Name)
+	(*ht)[habit.Name] = habit
+	return nil
+}
 func (ht *Tracker) AllHabits() string {
 	var message string
 	for _, habit := range *ht {
@@ -94,6 +108,16 @@ func SameDay(d1, d2 time.Time) bool {
 		return true
 	}
 	return false
+}
+
+const (
+	DailyInterval  time.Duration = 24 * time.Hour
+	WeeklyInterval               = 7 * 24 * time.Hour
+)
+
+var validInterval = map[time.Duration]bool{
+	DailyInterval:  true,
+	WeeklyInterval: true,
 }
 
 var trackerFile *os.File

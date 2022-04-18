@@ -144,3 +144,19 @@ func TestAllHabitsReportsCurrentStreaks(t *testing.T) {
 		t.Errorf("want:\n %s \ngot:\n %s", want, got)
 	}
 }
+
+func TestTracker_CreateHabitCreatesAWeeklyHabit(t *testing.T) {
+	t.Parallel()
+	tracker := habit.Tracker{}
+	newHabit := habit.Habit{
+		Name:     "piano",
+		Interval: habit.WeeklyInterval,
+	}
+	tracker.CreateHabit(&newHabit)
+	want := time.Now().Add(7 * 24 * time.Hour)
+	got := tracker["piano"].Period
+
+	if !habit.SameDay(want, got) {
+		t.Errorf("For a new habit want %q,\n got %q", want, got)
+	}
+}
