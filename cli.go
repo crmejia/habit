@@ -21,6 +21,7 @@ func RunCLI() {
 		fmt.Print(ht.AllHabits())
 		return
 	}
+	//TODO parse weekly habit
 	habit := ht.FetchHabit(os.Args[1])
 	err := ht.writeFile()
 	if err != nil {

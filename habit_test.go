@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-func TestFetchHabitSetsMessageCorrectlyForNewHabit(t *testing.T) {
+func TestTracker_FetchHabitSetsMessageCorrectlyForNewHabit(t *testing.T) {
 	t.Parallel()
 	ht := habit.Tracker{}
 	h := ht.FetchHabit("piano")
@@ -17,14 +17,14 @@ func TestFetchHabitSetsMessageCorrectlyForNewHabit(t *testing.T) {
 	}
 }
 
-func TestFetchHabitSetsMessageCorrectlyForStreakBrokenStreak(t *testing.T) {
+func TestTracker_FetchHabitSetsMessageCorrectlyForStreakBrokenStreak(t *testing.T) {
 	t.Parallel()
 	testCases := []struct {
 		want  string
 		habit *habit.Habit
 	}{
-		{want: "Nice work: you've done the habit 'surf' for 4 days in a row now. Keep it up!", habit: &habit.Habit{Name: "surf", Streak: 3, Period: time.Now()}},
-		{want: "You last did the habit 'running' 10 days ago, so you're starting a new streak today. Good luck!", habit: &habit.Habit{Name: "running", Streak: 10, Period: time.Now().Add(-10 * 24 * time.Hour)}},
+		{want: "Nice work: you've done the habit 'surf' for 4 days in a row now. Keep it up!", habit: &habit.Habit{Name: "surf", Streak: 3, DueDate: time.Now()}},
+		{want: "You last did the habit 'running' 10 days ago, so you're starting a new streak today. Good luck!", habit: &habit.Habit{Name: "running", Streak: 10, DueDate: time.Now().Add(-10 * 24 * time.Hour)}},
 	}
 	ht := habit.Tracker{}
 	for _, tc := range testCases {
@@ -37,13 +37,14 @@ func TestFetchHabitSetsMessageCorrectlyForStreakBrokenStreak(t *testing.T) {
 	}
 }
 
-func TestFetchHabitSetsMessageCorrectlyForAlreadyIncreasedStreak(t *testing.T) {
+func TestTracker_FetchHabitSetsMessageCorrectlyForAlreadyIncreasedStreak(t *testing.T) {
 	t.Parallel()
 	ht := habit.Tracker{
 		"piano": &habit.Habit{
-			Name:   "piano",
-			Streak: 2,
-			Period: habit.Tomorrow(),
+			Name:     "piano",
+			Interval: habit.DailyInterval,
+			Streak:   2,
+			DueDate:  time.Now().Add(habit.DailyInterval),
 		},
 	}
 	h := ht.FetchHabit("piano")
@@ -53,7 +54,7 @@ func TestFetchHabitSetsMessageCorrectlyForAlreadyIncreasedStreak(t *testing.T) {
 		t.Errorf("For %d day streak: want the message to be:\n%s,\n got\n%s", h.Streak, want, got)
 	}
 }
-func TestTracker_FetchHabitReturnPtrIsMatchTheMapPtr(t *testing.T) {
+func TestTracker_FetchHabitReturnPtrMatchesMapPtr(t *testing.T) {
 	t.Parallel()
 	tracker := habit.Tracker{
 		"piano": &habit.Habit{
@@ -65,7 +66,7 @@ func TestTracker_FetchHabitReturnPtrIsMatchTheMapPtr(t *testing.T) {
 		t.Error("want FetchHabit return ptr to be equal to the Map(Tracker type) ptr")
 	}
 }
-func TestFetchHabitReturnsANewHabitWithZeroDaysStreakOnNewHabit(t *testing.T) {
+func TestTracker_FetchHabitReturnsANewHabitWithZeroDaysStreakOnNewHabit(t *testing.T) {
 	t.Parallel()
 	tracker := habit.Tracker{}
 	tracker.FetchHabit("piano")
@@ -77,13 +78,13 @@ func TestFetchHabitReturnsANewHabitWithZeroDaysStreakOnNewHabit(t *testing.T) {
 	}
 }
 
-func TestFetchHabitIncreasesStreakOnExistingHabit(t *testing.T) {
+func TestTracker_FetchHabitIncreasesStreakOnExistingDailyHabit(t *testing.T) {
 	t.Parallel()
 	tracker := habit.Tracker{
 		"piano": &habit.Habit{
-			Name:   "piano",
-			Streak: 1,
-			Period: time.Now(),
+			Name:    "piano",
+			Streak:  1,
+			DueDate: time.Now(),
 		},
 	}
 	tracker.FetchHabit("piano")
@@ -94,13 +95,49 @@ func TestFetchHabitIncreasesStreakOnExistingHabit(t *testing.T) {
 	}
 }
 
-func TestFetchHabitIncreaseStreakOncePerDay(t *testing.T) {
+func TestTracker_FetchHabitSetsCorrectDueDateOnExistingWeeklyHabit(t *testing.T) {
 	t.Parallel()
 	tracker := habit.Tracker{
 		"piano": &habit.Habit{
-			Name:   "piano",
-			Streak: 1,
-			Period: habit.Tomorrow(),
+			Name:     "piano",
+			Streak:   1,
+			DueDate:  time.Now(),
+			Interval: habit.WeeklyInterval,
+		},
+	}
+	tracker.FetchHabit("piano")
+	want := time.Now().Add(habit.WeeklyInterval)
+	got := tracker["piano"].DueDate
+	if !habit.SameDay(want, got) {
+		t.Errorf("want DueDate to be set to %q, got %q", want, got)
+	}
+}
+
+func TestTracker_FetchHabitIncreaseStreakOncePerDay(t *testing.T) {
+	t.Parallel()
+	tracker := habit.Tracker{
+		"piano": &habit.Habit{
+			Name:     "piano",
+			Interval: habit.DailyInterval,
+			Streak:   1,
+			DueDate:  time.Now().Add(habit.DailyInterval),
+		},
+	}
+	h := tracker.FetchHabit("piano")
+	want := 1
+	got := h.Streak
+	if want != got {
+		t.Errorf("want streak to increase to %d, got %d", want, got)
+	}
+}
+func TestTracker_FetchHabitIncreaseWeeklyStreakOncePerWeeks(t *testing.T) {
+	t.Parallel()
+	tracker := habit.Tracker{
+		"piano": &habit.Habit{
+			Name:     "piano",
+			Interval: habit.WeeklyInterval,
+			Streak:   1,
+			DueDate:  time.Now().Add(habit.WeeklyInterval),
 		},
 	}
 	h := tracker.FetchHabit("piano")
@@ -111,14 +148,14 @@ func TestFetchHabitIncreaseStreakOncePerDay(t *testing.T) {
 	}
 }
 
-func TestFetchHabitResetsStreak(t *testing.T) {
+func TestTracker_FetchHabitResetsStreak(t *testing.T) {
 	t.Parallel()
 	fiveDaysAgo := time.Now().Add(-5 * 24 * time.Hour)
 	tracker := habit.Tracker{
 		"piano": &habit.Habit{
-			Name:   "piano",
-			Streak: 8,
-			Period: fiveDaysAgo,
+			Name:    "piano",
+			Streak:  8,
+			DueDate: fiveDaysAgo,
 		},
 	}
 	h := tracker.FetchHabit("piano")
@@ -129,13 +166,31 @@ func TestFetchHabitResetsStreak(t *testing.T) {
 	}
 }
 
+func TestTracker_FetchHabitResetsStreakOnWeeklyHabit(t *testing.T) {
+	t.Parallel()
+	twoWeeksAgo := time.Now().Add(-14 * 24 * time.Hour)
+	tracker := habit.Tracker{
+		"piano": &habit.Habit{
+			Name:     "piano",
+			Interval: habit.WeeklyInterval,
+			Streak:   8,
+			DueDate:  twoWeeksAgo,
+		},
+	}
+	h := tracker.FetchHabit("piano")
+	want := 0
+	got := h.Streak
+	if want != got {
+		t.Errorf("want streak to reset to %d, got %d", want, got)
+	}
+}
 func TestAllHabitsReportsCurrentStreaks(t *testing.T) {
 	t.Parallel()
 	tracker := habit.Tracker{
 		"piano": &habit.Habit{
-			Name:   "piano",
-			Streak: 8,
-			Period: habit.Tomorrow(),
+			Name:    "piano",
+			Streak:  8,
+			DueDate: time.Now().Add(habit.DailyInterval),
 		},
 	}
 	want := "You're currently on a 8-day streak for 'piano'. Stick to it!\n"
@@ -154,7 +209,7 @@ func TestTracker_CreateHabitCreatesAWeeklyHabit(t *testing.T) {
 	}
 	tracker.CreateHabit(&newHabit)
 	want := time.Now().Add(7 * 24 * time.Hour)
-	got := tracker["piano"].Period
+	got := tracker["piano"].DueDate
 
 	if !habit.SameDay(want, got) {
 		t.Errorf("For a new habit want %q,\n got %q", want, got)

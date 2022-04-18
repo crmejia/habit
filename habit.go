@@ -16,7 +16,7 @@ import (
 type Habit struct {
 	Name     string
 	Streak   int
-	Period   time.Time
+	DueDate  time.Time
 	Interval time.Duration
 	message  string
 }
@@ -37,29 +37,29 @@ func (ht *Tracker) FetchHabit(name string) *Habit {
 	habit, ok := (*ht)[name]
 	if !ok { //Create
 		habit = &Habit{
-			Name:    name,
-			Period:  Tomorrow(),
-			message: fmt.Sprintf(newHabit, name),
+			Name:     name,
+			Interval: DailyInterval,
 		}
-		(*ht)[habit.Name] = habit
+
+		ht.CreateHabit(habit)
 		return habit
 	}
 
-	if SameDay(habit.Period, time.Now()) {
+	if SameDay(habit.DueDate, time.Now()) {
 		//increase streak
 		habit.Streak++
-		habit.Period = Tomorrow()
+		habit.DueDate = time.Now().Add(habit.Interval)
 		habit.message = fmt.Sprintf(streakHabit, habit.Name, habit.Streak)
-	} else if SameDay(habit.Period, Tomorrow()) {
+	} else if SameDay(habit.DueDate, time.Now().Add(habit.Interval)) {
 		//repeated habit
 		habit.message = fmt.Sprintf(repeatedHabit, habit.Name)
-	} else if !SameDay(habit.Period, time.Now()) && !SameDay(habit.Period, Tomorrow()) {
+	} else if !SameDay(habit.DueDate, time.Now()) && !SameDay(habit.DueDate, time.Now().Add(habit.Interval)) {
 		//streak lost
-		sinceDuration := time.Since(habit.Period)
+		sinceDuration := time.Since(habit.DueDate)
 		sinceDays := sinceDuration.Hours() / 24.0
 		habit.message = fmt.Sprintf(brokeStreak, habit.Name, sinceDays)
 		habit.Streak = 0
-		habit.Period = Tomorrow()
+		habit.DueDate = time.Now().Add(habit.Interval)
 	}
 
 	return habit
@@ -73,7 +73,7 @@ func (ht *Tracker) CreateHabit(habit *Habit) error {
 	if !validInterval[habit.Interval] {
 		return errors.New("not a valid interval")
 	}
-	habit.Period = time.Now().Add(habit.Interval)
+	habit.DueDate = time.Now().Add(habit.Interval)
 	habit.message = fmt.Sprintf(newHabit, habit.Name)
 	(*ht)[habit.Name] = habit
 	return nil
@@ -97,10 +97,6 @@ const (
 	brokeStreak   = "You last did the habit '%s' %.0f days ago, so you're starting a new streak today. Good luck!"
 	habitStatus   = "You're currently on a %d-day streak for '%s'. Stick to it!"
 )
-
-func Tomorrow() time.Time {
-	return time.Now().Add(24 * time.Hour)
-}
 
 //func SameDay returns true if the days are the same ignoring hours, mins,etc
 func SameDay(d1, d2 time.Time) bool {
