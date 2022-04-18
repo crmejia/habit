@@ -6,10 +6,12 @@ import (
 	"time"
 )
 
-func TestTracker_FetchHabitSetsMessageCorrectlyForNewHabit(t *testing.T) {
+func TestTracker_CreateHabitSetsMessageCorrectlyForNewHabit(t *testing.T) {
 	t.Parallel()
 	ht := habit.Tracker{}
-	h := ht.FetchHabit("piano")
+	h := &habit.Habit{Name: "piano",
+		Interval: habit.DailyInterval}
+	ht.CreateHabit(h)
 	want := "Good luck with your new habit 'piano'! Don't forget to do it again tomorrow."
 	got := h.String()
 	if want != got {
@@ -29,7 +31,7 @@ func TestTracker_FetchHabitSetsMessageCorrectlyForStreakBrokenStreak(t *testing.
 	ht := habit.Tracker{}
 	for _, tc := range testCases {
 		ht[tc.habit.Name] = tc.habit
-		h := ht.FetchHabit(tc.habit.Name)
+		h, _ := ht.FetchHabit(tc.habit.Name)
 		got := h.String()
 		if tc.want != got {
 			t.Errorf("For %d day streak: want the message to be:\n%s,\n got\n%s", tc.habit.Streak, tc.want, got)
@@ -47,7 +49,7 @@ func TestTracker_FetchHabitSetsMessageCorrectlyForAlreadyIncreasedStreak(t *test
 			DueDate:  time.Now().Add(habit.DailyInterval),
 		},
 	}
-	h := ht.FetchHabit("piano")
+	h, _ := ht.FetchHabit("piano")
 	want := "You already logged 'piano' today. Keep it up!"
 	got := h.String()
 	if want != got {
@@ -61,20 +63,19 @@ func TestTracker_FetchHabitReturnPtrMatchesMapPtr(t *testing.T) {
 			Name: "piano",
 		},
 	}
-	h := tracker.FetchHabit("piano")
+	h, _ := tracker.FetchHabit("piano")
 	if h != tracker["piano"] {
 		t.Error("want FetchHabit return ptr to be equal to the Map(Tracker type) ptr")
 	}
 }
-func TestTracker_FetchHabitReturnsANewHabitWithZeroDaysStreakOnNewHabit(t *testing.T) {
+func TestTracker_FetchHabitReturnsFalseOnNonExistentHabit(t *testing.T) {
 	t.Parallel()
 	tracker := habit.Tracker{}
-	tracker.FetchHabit("piano")
-	want := 0
-	got := tracker["piano"].Streak
+	_, got := tracker.FetchHabit("piano")
+	want := false
 
 	if want != got {
-		t.Errorf("For a new habit want %d,\n got %d", want, got)
+		t.Errorf("For a new habit want %t,\n got %t", want, got)
 	}
 }
 
@@ -123,7 +124,7 @@ func TestTracker_FetchHabitIncreaseStreakOncePerDay(t *testing.T) {
 			DueDate:  time.Now().Add(habit.DailyInterval),
 		},
 	}
-	h := tracker.FetchHabit("piano")
+	h, _ := tracker.FetchHabit("piano")
 	want := 1
 	got := h.Streak
 	if want != got {
@@ -140,7 +141,7 @@ func TestTracker_FetchHabitIncreaseWeeklyStreakOncePerWeeks(t *testing.T) {
 			DueDate:  time.Now().Add(habit.WeeklyInterval),
 		},
 	}
-	h := tracker.FetchHabit("piano")
+	h, _ := tracker.FetchHabit("piano")
 	want := 1
 	got := h.Streak
 	if want != got {
@@ -158,7 +159,7 @@ func TestTracker_FetchHabitResetsStreak(t *testing.T) {
 			DueDate: fiveDaysAgo,
 		},
 	}
-	h := tracker.FetchHabit("piano")
+	h, _ := tracker.FetchHabit("piano")
 	want := 0
 	got := h.Streak
 	if want != got {
@@ -177,7 +178,7 @@ func TestTracker_FetchHabitResetsStreakOnWeeklyHabit(t *testing.T) {
 			DueDate:  twoWeeksAgo,
 		},
 	}
-	h := tracker.FetchHabit("piano")
+	h, _ := tracker.FetchHabit("piano")
 	want := 0
 	got := h.Streak
 	if want != got {

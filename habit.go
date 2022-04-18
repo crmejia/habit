@@ -33,16 +33,10 @@ func NewTracker() Tracker {
 	return tracker
 }
 
-func (ht *Tracker) FetchHabit(name string) *Habit {
+func (ht *Tracker) FetchHabit(name string) (*Habit, bool) {
 	habit, ok := (*ht)[name]
-	if !ok { //Create
-		habit = &Habit{
-			Name:     name,
-			Interval: DailyInterval,
-		}
-
-		ht.CreateHabit(habit)
-		return habit
+	if !ok {
+		return nil, false
 	}
 
 	if SameDay(habit.DueDate, time.Now()) {
@@ -62,7 +56,7 @@ func (ht *Tracker) FetchHabit(name string) *Habit {
 		habit.DueDate = time.Now().Add(habit.Interval)
 	}
 
-	return habit
+	return habit, true
 }
 
 func (ht *Tracker) CreateHabit(habit *Habit) error {
@@ -90,6 +84,8 @@ func (h Habit) String() string {
 	return h.message
 }
 
+//TODO improve messaging for weekly intervals
+// could also add variation to messages
 const (
 	newHabit      = "Good luck with your new habit '%s'! Don't forget to do it again tomorrow."
 	repeatedHabit = "You already logged '%s' today. Keep it up!"
