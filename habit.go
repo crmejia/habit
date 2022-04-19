@@ -3,14 +3,11 @@ package habit
 import (
 	"fmt"
 	"log"
-	"os"
 	"time"
 )
 
 import (
-	"encoding/json"
 	"errors"
-	"io/ioutil"
 )
 
 type Habit struct {
@@ -23,10 +20,10 @@ type Habit struct {
 
 type Tracker map[string]*Habit
 
-func NewTracker() Tracker {
+func NewTracker(filename string) Tracker {
 	tracker := Tracker{}
-	filename := os.Getenv("HOME") + "/.habitTracker"
-	err := tracker.loadFile(filename)
+
+	err := tracker.LoadFile(filename)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -109,55 +106,4 @@ const (
 var validInterval = map[time.Duration]bool{
 	DailyInterval:  true,
 	WeeklyInterval: true,
-}
-
-var trackerFile *os.File
-
-//TODO test loading
-//why we need to test this?
-//loading from a file | db is a fundamental operation but it needs to be tested just to make sure we don't
-//ship utterly broken software
-//how to test this:
-// divide the two behaviors that are bundled together here:
-// reading the file | db
-// parse the bytes to a map
-func (ht *Tracker) loadFile(filename string) error {
-	var err error
-	trackerFile, err = os.OpenFile(filename, os.O_CREATE|os.O_RDWR, 0600)
-	if err != nil {
-		return err
-	}
-
-	fileBytes, err := ioutil.ReadAll(trackerFile)
-	if err != nil {
-		return err
-	}
-	if len(fileBytes) > 0 {
-		err = json.Unmarshal(fileBytes, ht)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (ht *Tracker) writeFile() error {
-	if trackerFile == nil {
-		return errors.New("file is not set")
-	}
-	fileBytes, err := json.Marshal(ht)
-	if err != nil {
-		return err
-	}
-	trackerFile.Truncate(0)
-	trackerFile.Seek(0, 0)
-	_, err = trackerFile.Write(fileBytes)
-	if err != nil {
-		return err
-	}
-	if err != nil {
-		return err
-	}
-	trackerFile.Close()
-	return nil
 }

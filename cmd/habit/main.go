@@ -6,5 +6,6 @@ import (
 )
 
 func main() {
-	habit.RunCLI(os.Args[1:], os.Stdout)
+	filename := os.Getenv("HOME") + "/.habitTracker"
+	habit.RunCLI(filename, os.Args[1:], os.Stdout)
 }

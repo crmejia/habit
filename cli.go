@@ -15,9 +15,9 @@ const (
 habit  -- to list all habits`
 )
 
-func RunCLI(args []string, output io.Writer) {
+func RunCLI(filename string, args []string, output io.Writer) {
 
-	ht := NewTracker()
+	ht := NewTracker(filename)
 	if len(args) == 0 {
 		fmt.Fprintln(output, ht.AllHabits())
 		return
@@ -62,7 +62,7 @@ func RunCLI(args []string, output io.Writer) {
 		ht.CreateHabit(habit)
 	}
 
-	err := ht.writeFile()
+	err := ht.WriteFile(filename)
 	if err != nil {
 		log.Fatal(err)
 	}
