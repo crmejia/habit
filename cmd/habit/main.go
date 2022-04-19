@@ -1,7 +1,10 @@
 package main
 
-import "habit"
+import (
+	"habit"
+	"os"
+)
 
 func main() {
-	habit.RunCLI()
+	habit.RunCLI(os.Args[1:], os.Stdout)
 }

@@ -3,8 +3,8 @@ package habit
 import (
 	"flag"
 	"fmt"
+	"io"
 	"log"
-	"os"
 )
 
 const (
@@ -15,26 +15,36 @@ const (
 habit  -- to list all habits`
 )
 
-func RunCLI() {
-	var frequency string
-	flag.StringVar(&frequency, "frequency", "daily", frequency_usage)
-	flag.StringVar(&frequency, "f", "daily", frequency_usage+shorthand)
+func RunCLI(args []string, output io.Writer) {
 
 	ht := NewTracker()
-	if len(os.Args) == 1 {
-		fmt.Print(ht.AllHabits())
+	if len(args) == 0 {
+		fmt.Fprintln(output, ht.AllHabits())
 		return
 	}
-	flag.Parse()
+	flagSet := flag.NewFlagSet("habit", flag.ExitOnError)
+	flagSet.SetOutput(output)
 
-	if len(flag.Args()) > 1 {
-		fmt.Println("too many args")
-		fmt.Println(help_intro)
-		flag.Usage()
+	var frequency string
+	flagSet.StringVar(&frequency, "frequency", "daily", frequency_usage)
+	flagSet.StringVar(&frequency, "f", "daily", frequency_usage+shorthand)
+
+	flagSet.Parse(args)
+
+	if len(flagSet.Args()) > 1 {
+		fmt.Fprintln(output, "too many args")
+		fmt.Fprintln(output, help_intro)
+		flagSet.Usage()
+		return
+	}
+	if len(flagSet.Args()) == 0 {
+		// no habit specified
+		fmt.Fprintln(output, help_intro)
+		flagSet.Usage()
 		return
 	}
 
-	habitName := flag.Args()[0]
+	habitName := flagSet.Args()[0]
 	habit, ok := ht.FetchHabit(habitName)
 
 	if !ok {

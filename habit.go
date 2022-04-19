@@ -38,7 +38,6 @@ func (ht *Tracker) FetchHabit(name string) (*Habit, bool) {
 	if !ok {
 		return nil, false
 	}
-
 	if SameDay(habit.DueDate, time.Now()) {
 		//increase streak
 		habit.Streak++
@@ -73,7 +72,7 @@ func (ht *Tracker) CreateHabit(habit *Habit) error {
 	return nil
 }
 func (ht *Tracker) AllHabits() string {
-	var message string
+	message := "Habits:\n"
 	for _, habit := range *ht {
 		message += fmt.Sprintf(habitStatus+"\n", habit.Streak, habit.Name)
 	}
@@ -85,7 +84,7 @@ func (h Habit) String() string {
 }
 
 //TODO improve messaging for weekly intervals
-// could also add variation to messages
+// could also add variation to messages~
 const (
 	newHabit      = "Good luck with your new habit '%s'! Don't forget to do it again tomorrow."
 	repeatedHabit = "You already logged '%s' today. Keep it up!"

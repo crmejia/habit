@@ -194,7 +194,7 @@ func TestAllHabitsReportsCurrentStreaks(t *testing.T) {
 			DueDate: time.Now().Add(habit.DailyInterval),
 		},
 	}
-	want := "You're currently on a 8-day streak for 'piano'. Stick to it!\n"
+	want := "Habits:\nYou're currently on a 8-day streak for 'piano'. Stick to it!\n"
 	got := tracker.AllHabits()
 	if want != got {
 		t.Errorf("want:\n %s \ngot:\n %s", want, got)
