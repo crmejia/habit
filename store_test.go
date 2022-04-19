@@ -27,7 +27,7 @@ func TestRoundtripWriteRead(t *testing.T) {
 
 	_, ok := loadTracker["piano"]
 	if !ok {
-		t.Errorf("want the same ")
+		t.Errorf("want loaded file to contain the same habit that was written")
 	}
 }
 func tmpFile() *os.File {

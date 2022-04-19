@@ -216,3 +216,35 @@ func TestTracker_CreateHabitCreatesAWeeklyHabit(t *testing.T) {
 		t.Errorf("For a new habit want %q,\n got %q", want, got)
 	}
 }
+
+func TestTracker_CreateHabitFailsOnExistingHabit(t *testing.T) {
+	t.Parallel()
+	tracker := habit.Tracker{
+		"piano": &habit.Habit{
+			Name: "piano",
+		},
+	}
+	newHabit := habit.Habit{
+		Name:     "piano",
+		Interval: habit.WeeklyInterval,
+	}
+	err := tracker.CreateHabit(&newHabit)
+	if err == nil {
+		t.Errorf("want an error on recreating existing habits, got : %s", err.Error())
+	}
+
+}
+
+func TestTracker_CreateHabitFailsOnInvalidInterval(t *testing.T) {
+	t.Parallel()
+	tracker := habit.Tracker{}
+	newHabit := habit.Habit{
+		Name:     "piano",
+		Interval: time.Hour,
+	}
+	err := tracker.CreateHabit(&newHabit)
+	if err == nil {
+		t.Errorf("want an error on creating habit with invalid interval, got : %s", err.Error())
+	}
+
+}
