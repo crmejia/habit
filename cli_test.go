@@ -20,7 +20,7 @@ func TestNoArgsShowsAllHabits(t *testing.T) {
 	got := buffer.String()
 
 	if !strings.Contains(got, want) {
-		t.Errorf("No arguments should print usage message got: %s", got)
+		t.Errorf("No arguments should print usage Message got: %s", got)
 	}
 }
 func TestMoreThanOneArgShowsUsageHelp(t *testing.T) {
@@ -35,7 +35,7 @@ func TestMoreThanOneArgShowsUsageHelp(t *testing.T) {
 	got := buffer.String()
 
 	if !strings.Contains(got, want) {
-		t.Errorf("No arguments should print usage message got: %s", got)
+		t.Errorf("No arguments should print usage Message got: %s", got)
 	}
 }
 
@@ -51,6 +51,6 @@ func TestOptionsButNoArgsShowsUsageHelp(t *testing.T) {
 	got := buffer.String()
 
 	if !strings.Contains(got, want) {
-		t.Errorf("No arguments should print usage message got: %s", got)
+		t.Errorf("No arguments should print usage Message got: %s", got)
 	}
 }
