@@ -78,7 +78,6 @@ func (h Habit) String() string {
 	return h.Message
 }
 
-//TODO add variation to messages
 func (h *Habit) GenerateMessage(kind MessageKind) {
 	var intervalString string
 	switch kind {
