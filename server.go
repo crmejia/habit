@@ -11,6 +11,7 @@ type server struct {
 }
 
 func NewServer(filename string) *server {
+	//todo inject tracker
 	tracker := NewTracker(filename)
 	server := server{
 		Server:  &http.Server{},

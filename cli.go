@@ -7,14 +7,6 @@ import (
 	"log"
 )
 
-const (
-	frequency_usage = "Set the frecuency of the habit: daily(default), weekly."
-	shorthand       = " (shorthand)"
-	help_intro      = `habit is an application to assist you in building habits
-     habit <options> <HABIT_NAME> -- to create/update a new habit
-habit  -- to list all habits`
-)
-
 func RunCLI(filename string, args []string, output io.Writer) {
 
 	ht := NewTracker(filename)
@@ -29,6 +21,10 @@ func RunCLI(filename string, args []string, output io.Writer) {
 	flagSet.StringVar(&frequency, "frequency", "daily", frequency_usage)
 	flagSet.StringVar(&frequency, "f", "daily", frequency_usage+shorthand)
 
+	var serverMode bool
+	flagSet.BoolVar(&serverMode, "server", false, serverMode_usage)
+	flagSet.BoolVar(&serverMode, "s", false, serverMode_usage+shorthand)
+
 	flagSet.Parse(args)
 
 	if len(flagSet.Args()) > 1 {
@@ -37,14 +33,32 @@ func RunCLI(filename string, args []string, output io.Writer) {
 		flagSet.Usage()
 		return
 	}
-	if len(flagSet.Args()) == 0 {
+	if len(flagSet.Args()) == 0 && !serverMode {
 		// no habit specified
 		fmt.Fprintln(output, help_intro)
 		flagSet.Usage()
 		return
 	}
+	if serverMode {
+		runHTTPServer(filename)
+	} else {
+		habitName := flagSet.Args()[0]
+		runCLI(filename, habitName, frequency, &ht)
+	}
+	return
+}
 
-	habitName := flagSet.Args()[0]
+const (
+	frequency_usage  = "Set the frecuency of the habit: daily(default), weekly."
+	serverMode_usage = "Runs habit as a HTTP Server"
+	shorthand        = " (shorthand)"
+	help_intro       = `habit is an application to assist you in building habits
+     habit <options> <HABIT_NAME> -- to create/update a new habit
+habit  -- to list all habits`
+)
+
+func runCLI(filename, habitName, frequency string, ht *Tracker) {
+
 	habit, ok := ht.FetchHabit(habitName)
 
 	if !ok {
@@ -67,4 +81,9 @@ func RunCLI(filename string, args []string, output io.Writer) {
 		log.Fatal(err)
 	}
 	fmt.Println(habit)
+}
+
+func runHTTPServer(filename string) {
+	server := NewServer(filename)
+	server.Run()
 }
