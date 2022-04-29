@@ -18,7 +18,7 @@ func TestRoundtripWriteRead(t *testing.T) {
 			DueDate:  time.Now().Add(habit.WeeklyInterval),
 		},
 	}
-	tmpFile := tmpFile()
+	tmpFile := CreateTmpFile()
 	defer os.Remove(tmpFile.Name())
 	writeTracker.WriteFile(tmpFile.Name())
 
@@ -30,7 +30,7 @@ func TestRoundtripWriteRead(t *testing.T) {
 		t.Errorf("want loaded file to contain the same habit that was written")
 	}
 }
-func tmpFile() *os.File {
+func CreateTmpFile() *os.File {
 	tmpFile, err := os.CreateTemp("", "")
 	if err != nil {
 		log.Fatal("couldn't create tmp file")

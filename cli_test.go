@@ -13,7 +13,7 @@ func TestNoArgsShowsAllHabits(t *testing.T) {
 	t.Parallel()
 	var args []string
 	buffer := bytes.Buffer{}
-	tmpFile := tmpFile()
+	tmpFile := CreateTmpFile()
 	defer os.Remove(tmpFile.Name())
 	habit.RunCLI(tmpFile.Name(), args, &buffer)
 
@@ -28,7 +28,7 @@ func TestMoreThanOneArgShowsUsageHelp(t *testing.T) {
 	t.Parallel()
 	args := []string{"blah", "blah"}
 	buffer := bytes.Buffer{}
-	tmpFile := tmpFile()
+	tmpFile := CreateTmpFile()
 	defer os.Remove(tmpFile.Name())
 
 	want := "Usage"
@@ -44,7 +44,7 @@ func TestOptionsButNoArgsShowsUsageHelp(t *testing.T) {
 	t.Parallel()
 	args := []string{"-f", "daily"}
 	buffer := bytes.Buffer{}
-	tmpFile := tmpFile()
+	tmpFile := CreateTmpFile()
 	defer os.Remove(tmpFile.Name())
 
 	want := "Usage"
@@ -58,9 +58,9 @@ func TestOptionsButNoArgsShowsUsageHelp(t *testing.T) {
 
 func TestOptionServerStartsAHTTPSERVER(t *testing.T) {
 	t.Parallel()
-	args := []string{"-s", "localhost:8080"}
+	args := []string{"-s", address}
 	buffer := bytes.Buffer{}
-	tmpFile := tmpFile()
+	tmpFile := CreateTmpFile()
 	defer os.Remove(tmpFile.Name())
 
 	//TODO not the correct way to run a server... buffer is not needed?

@@ -2,6 +2,7 @@ package habit
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 )
 
@@ -10,11 +11,11 @@ type server struct {
 	Tracker *Tracker
 }
 
-func NewServer(filename string) *server {
+func NewServer(filename string, address string) *server {
 	//todo inject tracker
 	tracker := NewTracker(filename)
 	server := server{
-		Server:  &http.Server{},
+		Server:  &http.Server{Addr: address},
 		Tracker: &tracker,
 	}
 	return &server
@@ -24,7 +25,11 @@ func (server *server) Run() {
 	http.HandleFunc("/", server.HabitHandler)
 	http.HandleFunc("/all", server.AllHabitsHandler)
 
-	http.ListenAndServe("localhost:8080", nil)
+	//http.ListenAndServe("localhost:8080", nil)
+	err := server.Server.ListenAndServe()
+	if err != http.ErrServerClosed {
+		log.Println(err)
+	}
 }
 
 func (server *server) HabitHandler(w http.ResponseWriter, r *http.Request) {
@@ -50,3 +55,7 @@ func (server *server) HabitHandler(w http.ResponseWriter, r *http.Request) {
 func (server *server) AllHabitsHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, server.Tracker.AllHabits())
 }
+
+const (
+	defaultTCPAddress = "127.0.0.1:8080"
+)

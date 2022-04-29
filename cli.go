@@ -40,7 +40,11 @@ func RunCLI(filename string, args []string, output io.Writer) {
 		return
 	}
 	if serverMode {
-		runHTTPServer(filename)
+		address := defaultTCPAddress
+		if len(flagSet.Args()) > 0 {
+			address = flagSet.Args()[0]
+		}
+		runHTTPServer(filename, address)
 	} else {
 		habitName := flagSet.Args()[0]
 		runCLI(filename, habitName, frequency, &ht)
@@ -83,7 +87,7 @@ func runCLI(filename, habitName, frequency string, ht *Tracker) {
 	fmt.Println(habit)
 }
 
-func runHTTPServer(filename string) {
-	server := NewServer(filename)
+func runHTTPServer(filename, address string) {
+	server := NewServer(filename, address)
 	server.Run()
 }
