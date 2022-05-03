@@ -35,31 +35,31 @@ func TestNewServerWithNonDefaultAddress(t *testing.T) {
 
 }
 
-func TestAllHabitsHandlerReturnsAllHabits(t *testing.T) {
-	recorder := httptest.NewRecorder()
-	request := httptest.NewRequest(http.MethodGet, "/all", nil)
-	tmpFile := CreateTmpFile()
-	defer os.Remove(tmpFile.Name())
-	server := habit.NewServer(tmpFile.Name(), address)
-	server.AllHabitsHandler(recorder, request)
-	res := recorder.Result()
-
-	defer res.Body.Close()
-
-	got, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		t.Errorf("couldn't read response:%v", err)
-	}
-
-	if res.StatusCode != http.StatusOK {
-		t.Errorf("expected status 200 OK, got: %d", res.StatusCode)
-	}
-
-	want := "Habits:"
-	if !strings.Contains(string(got), want) {
-		t.Errorf("wanted a list of habits, got:\n %s", got)
-	}
-}
+//func TestAllHabitsHandlerReturnsAllHabits(t *testing.T) {
+//	recorder := httptest.NewRecorder()
+//	request := httptest.NewRequest(http.MethodGet, "/all", nil)
+//	tmpFile := CreateTmpFile()
+//	defer os.Remove(tmpFile.Name())
+//	server := habit.NewServer(tmpFile.Name(), address)
+//	server.AllHabitsHandler(recorder, request)
+//	res := recorder.Result()
+//
+//	defer res.Body.Close()
+//
+//	got, err := ioutil.ReadAll(res.Body)
+//	if err != nil {
+//		t.Errorf("couldn't read response:%v", err)
+//	}
+//
+//	if res.StatusCode != http.StatusOK {
+//		t.Errorf("expected status 200 OK, got: %d", res.StatusCode)
+//	}
+//
+//	want := "Habits:"
+//	if !strings.Contains(string(got), want) {
+//		t.Errorf("wanted a list of habits, got:\n %s", got)
+//	}
+//}
 
 func TestHabitHandlerReturnsHabit(t *testing.T) {
 	recorder := httptest.NewRecorder()
@@ -105,7 +105,36 @@ func TestHabitHandlerWithGibberishReturns400(t *testing.T) {
 }
 
 func TestRouting(t *testing.T) {
-	//todo Test index(/) returns all habits
+	tmpFile := CreateTmpFile()
+	defer os.Remove(tmpFile.Name())
+	habitServer := habit.NewServer(tmpFile.Name(), address)
+	testServer := httptest.NewServer(habitServer.Handler())
+	defer testServer.Close()
+
+	testCases := []struct {
+		path           string
+		wantStatusCode int
+	}{
+		{path: "/", wantStatusCode: http.StatusOK},
+		{path: "/all", wantStatusCode: http.StatusOK},
+		{path: "/?habit=piano", wantStatusCode: http.StatusOK},
+		{path: "/piano", wantStatusCode: http.StatusBadRequest},
+		{path: "/piano?habit=piano", wantStatusCode: http.StatusBadRequest},
+		{path: "/?test=test", wantStatusCode: http.StatusBadRequest},
+		{path: "/test?test=test", wantStatusCode: http.StatusBadRequest},
+	}
+
+	for _, tc := range testCases {
+		res, err := http.Get(testServer.URL + tc.path)
+		if err != nil {
+			t.Fatalf("could not send http request got error %v", err)
+		}
+		got := res.StatusCode
+		if tc.wantStatusCode != got {
+			t.Errorf("want status %d for path:%s, got %d", tc.wantStatusCode, tc.path, got)
+		}
+		res.Body.Close() //no defer at it might leak ;)
+	}
 }
 
 const address = "127.0.0.1:8080"

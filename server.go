@@ -6,6 +6,9 @@ import (
 	"net/http"
 )
 
+//todo chicken or the egg?
+//Should the Tracker have server inside? but since Tracker is a map
+//it is not possible. Think about the best away to represent this relationship
 type server struct {
 	Server  *http.Server
 	Tracker *Tracker
@@ -15,27 +18,36 @@ func NewServer(filename string, address string) *server {
 	//todo inject tracker
 	tracker := NewTracker(filename)
 	server := server{
-		Server:  &http.Server{Addr: address},
+		Server: &http.Server{
+			Addr: address},
 		Tracker: &tracker,
 	}
 	return &server
 }
 
 func (server *server) Run() {
-	http.HandleFunc("/", server.HabitHandler)
-	http.HandleFunc("/all", server.AllHabitsHandler)
+	router := server.Handler()
+	server.Server.Handler = router
 
-	//http.ListenAndServe("localhost:8080", nil)
 	err := server.Server.ListenAndServe()
 	if err != http.ErrServerClosed {
 		log.Println(err)
 	}
 }
 
+func (server *server) Handler() http.Handler {
+	router := http.NewServeMux()
+	router.HandleFunc("/", server.HabitHandler)
+
+	return router
+}
+
 func (server *server) HabitHandler(w http.ResponseWriter, r *http.Request) {
 	habitName := r.FormValue("habit")
-
-	if habitName == "" {
+	if r.RequestURI == "/all" || r.RequestURI == "/" {
+		fmt.Fprint(w, server.Tracker.AllHabits())
+		return
+	} else if habitName == "" || r.URL.Path != "/" {
 		http.Error(w, "cannot parse querystring", http.StatusBadRequest)
 		return
 	}
@@ -50,10 +62,6 @@ func (server *server) HabitHandler(w http.ResponseWriter, r *http.Request) {
 		//}
 	}
 	fmt.Fprint(w, habit)
-}
-
-func (server *server) AllHabitsHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, server.Tracker.AllHabits())
 }
 
 const (
