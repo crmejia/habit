@@ -53,7 +53,7 @@ func RunCLI(filename string, args []string, output io.Writer) {
 }
 
 const (
-	frequency_usage  = "Set the frecuency of the habit: daily(default), weekly."
+	frequency_usage  = "Set the frecuency of the habit: daily, weekly."
 	serverMode_usage = "Runs habit as a HTTP Server"
 	shorthand        = " (shorthand)"
 	help_intro       = `habit is an application to assist you in building habits
