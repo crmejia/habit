@@ -63,7 +63,6 @@ func TestOptionServerStartsAHTTPSERVER(t *testing.T) {
 	tmpFile := CreateTmpFile()
 	defer os.Remove(tmpFile.Name())
 
-	//TODO not the correct way to run a server... buffer is not needed?
 	go habit.RunCLI(tmpFile.Name(), args, &buffer)
 	resp, err := http.Get("http://localhost:8080")
 	if err != nil {

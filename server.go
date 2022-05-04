@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 )
 
 //todo chicken or the egg?
@@ -43,6 +44,7 @@ func (server *server) Handler() http.Handler {
 }
 
 func (server *server) HabitHandler(w http.ResponseWriter, r *http.Request) {
+	//parsing querystring
 	habitName := r.FormValue("habit")
 	if r.RequestURI == "/all" || r.RequestURI == "/" {
 		fmt.Fprint(w, server.Tracker.AllHabits())
@@ -52,14 +54,27 @@ func (server *server) HabitHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	intervalString := r.FormValue("interval")
+	var interval time.Duration
+	if intervalString == "" || intervalString == "daily" {
+		interval = DailyInterval
+	} else if intervalString == "weekly" {
+		interval = WeeklyInterval
+	} else {
+		http.Error(w, "invalid interval", http.StatusBadRequest)
+	}
+
 	habit, ok := server.Tracker.FetchHabit(habitName)
 	if !ok {
-		habit = &Habit{Name: habitName, Interval: WeeklyInterval}
-		//TODO habit interval
-		server.Tracker.CreateHabit(habit)
-		//if err != nil {
-		//	//TODO return error
-		//}
+		habit = &Habit{Name: habitName, Interval: interval}
+
+		// this error is hard to test as the conditions that trigger cannot be met:
+		// - trying to create an existing habit(which FetchHabit(ln67) covers
+		// - invalid interval which ln59-65 cover
+		err := server.Tracker.CreateHabit(habit)
+		if err != nil {
+			http.Error(w, "not able to create habit", http.StatusInternalServerError)
+		}
 	}
 	fmt.Fprint(w, habit)
 }
