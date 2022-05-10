@@ -1,9 +1,12 @@
 package habit
 
 import (
+	"database/sql"
 	"encoding/json"
+	_ "github.com/mattn/go-sqlite3"
 	"io/ioutil"
 	"os"
+	"time"
 )
 
 //things to be done:
@@ -69,3 +72,97 @@ func (s FileStore) Write(tracker *Tracker) error {
 	trackerFile.Close()
 	return nil
 }
+
+type DBStore struct {
+	dbSource string
+}
+
+func NewDBStore(dbSource string) DBStore {
+	return DBStore{dbSource: dbSource}
+}
+
+func (s DBStore) Load() (Tracker, error) {
+	db, err := sql.Open("sqlite3", s.dbSource)
+	if err != nil {
+		return nil, err
+	}
+	defer db.Close()
+
+	_, err = db.Exec(createTable)
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := db.Query(getAllHabits)
+	if err != nil {
+		return nil, err
+	}
+	tracker := Tracker{}
+	for rows.Next() {
+		var (
+			name     string
+			streak   int
+			interval int64
+		)
+		err = rows.Scan(&name, &streak, &interval)
+		if err != nil {
+			return nil, err
+		}
+		habit := Habit{
+			Name:   name,
+			Streak: streak,
+			//DueDate:  time.Time{},
+			Interval: time.Duration(interval),
+			//Message:  "",
+		}
+		tracker[habit.Name] = &habit
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return tracker, nil
+}
+
+func (s DBStore) Write(tracker *Tracker) error {
+	db, err := sql.Open("sqlite3", s.dbSource)
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	_, err = db.Exec(createTable)
+	if err != nil {
+		return err
+	}
+
+	stmt, err := db.Prepare(insertHabit)
+	if err != nil {
+		return err
+	}
+
+	for _, habit := range *tracker {
+		_, err := stmt.Exec(habit.Name, habit.Streak, int64(habit.Interval))
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+const createTable = `
+CREATE TABLE IF NOT EXISTS habit(
+id INTEGER NOT NULL PRIMARY KEY,
+name VARCHAR NOT NULL,
+streak INTEGER NOT NULL,
+interval INTEGER NOT NULL
+);`
+
+//todo
+//dueDate DATETIME NOT NULL,
+
+const getAllHabits = `
+SELECT name,streak,interval FROM habit;
+`
+const insertHabit = `
+INSERT INTO habit(name,streak,interval) VALUES(?,?,?)
+`
