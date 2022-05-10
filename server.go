@@ -13,15 +13,16 @@ import (
 type server struct {
 	Server  *http.Server
 	Tracker *Tracker
+	Store   Storable
 }
 
-func NewServer(filename string, address string) *server {
-	//todo inject tracker
-	tracker := NewTracker(filename)
+func NewServer(store Storable, address string) *server {
+	tracker := NewTracker(store)
 	server := server{
 		Server: &http.Server{
 			Addr: address},
 		Tracker: &tracker,
+		Store:   store,
 	}
 	return &server
 }
@@ -47,7 +48,7 @@ func (server *server) HabitHandler(w http.ResponseWriter, r *http.Request) {
 	//parsing querystring
 	habitName := r.FormValue("habit")
 	if r.RequestURI == "/all" || r.RequestURI == "/" {
-		fmt.Fprint(w, server.Tracker.AllHabits())
+		fmt.Fprint(w, AllHabits(server.Store))
 		return
 	} else if habitName == "" || r.URL.Path != "/" {
 		http.Error(w, "cannot parse querystring", http.StatusBadRequest)

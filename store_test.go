@@ -22,7 +22,7 @@ func TestRoundtripWriteRead(t *testing.T) {
 	defer os.Remove(tmpFile.Name())
 
 	writeFileStore := habit.NewFileStore(tmpFile.Name())
-	writeFileStore.Write(writeTracker)
+	writeFileStore.Write(&writeTracker)
 
 	loadFileStore := habit.NewFileStore(tmpFile.Name())
 	loadTracker, _ := loadFileStore.Load()

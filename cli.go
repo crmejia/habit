@@ -8,12 +8,6 @@ import (
 )
 
 func RunCLI(filename string, args []string, output io.Writer) {
-
-	ht := NewTracker(filename)
-	if len(args) == 0 {
-		fmt.Fprintln(output, ht.AllHabits())
-		return
-	}
 	flagSet := flag.NewFlagSet("habit", flag.ExitOnError)
 	flagSet.SetOutput(output)
 
@@ -33,21 +27,36 @@ func RunCLI(filename string, args []string, output io.Writer) {
 		flagSet.Usage()
 		return
 	}
+	//var store Store
+	//if db
+	//store = newDBStore
+	// else if file
+	//store = newFileStore
+	store := NewFileStore(filename)
+
+	//TODO move this to runCLI or at least move after parsing
+	//this might mean making changing to AllHabits(store) instead of a method on Tracker
+	if len(args) == 0 {
+		fmt.Fprintln(output, AllHabits(store))
+		return
+	}
+
 	if len(flagSet.Args()) == 0 && !serverMode {
 		// no habit specified
 		fmt.Fprintln(output, help_intro)
 		flagSet.Usage()
 		return
 	}
+
 	if serverMode {
 		address := defaultTCPAddress
 		if len(flagSet.Args()) > 0 {
 			address = flagSet.Args()[0]
 		}
-		runHTTPServer(filename, address)
+		runHTTPServer(store, address)
 	} else {
 		habitName := flagSet.Args()[0]
-		runCLI(filename, habitName, frequency, &ht)
+		runCLI(store, habitName, frequency)
 	}
 	return
 }
@@ -61,8 +70,8 @@ const (
 habit  -- to list all habits`
 )
 
-func runCLI(filename, habitName, frequency string, ht *Tracker) {
-
+func runCLI(store Storable, habitName, frequency string) {
+	ht := NewTracker(store)
 	habit, ok := ht.FetchHabit(habitName)
 
 	if !ok {
@@ -80,14 +89,15 @@ func runCLI(filename, habitName, frequency string, ht *Tracker) {
 		ht.CreateHabit(habit)
 	}
 
-	err := ht.WriteFile(filename)
+	err := store.Write(&ht)
+
 	if err != nil {
 		log.Fatal(err)
 	}
 	fmt.Println(habit)
 }
 
-func runHTTPServer(filename, address string) {
-	server := NewServer(filename, address)
+func runHTTPServer(store Storable, address string) {
+	server := NewServer(store, address)
 	server.Run()
 }

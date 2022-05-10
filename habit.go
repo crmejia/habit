@@ -20,10 +20,10 @@ type Habit struct {
 
 type Tracker map[string]*Habit
 
-func NewTracker(filename string) Tracker {
-	tracker := Tracker{}
+func NewTracker(store Storable) Tracker {
+	//err := tracker.Load
+	tracker, err := store.Load()
 
-	err := tracker.LoadFile(filename)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -66,9 +66,10 @@ func (ht *Tracker) CreateHabit(habit *Habit) error {
 	(*ht)[habit.Name] = habit
 	return nil
 }
-func (ht *Tracker) AllHabits() string {
+func AllHabits(store Storable) string {
+	ht := NewTracker(store)
 	message := "Habits:\n"
-	for _, habit := range *ht {
+	for _, habit := range ht {
 		message += fmt.Sprintf(habitStatus+"\n", habit.Streak, habit.Name)
 	}
 	return message

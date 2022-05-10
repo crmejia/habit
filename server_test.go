@@ -15,7 +15,8 @@ func TestNewHttpServer(t *testing.T) {
 	tmpFile := CreateTmpFile()
 	defer os.Remove(tmpFile.Name())
 
-	server := habit.NewServer(tmpFile.Name(), address)
+	store := habit.NewFileStore(tmpFile.Name())
+	server := habit.NewServer(store, address)
 
 	if server.Tracker == nil {
 		t.Errorf("Tracker should not be nil")
@@ -27,7 +28,8 @@ func TestNewServerWithNonDefaultAddress(t *testing.T) {
 	tmpFile := CreateTmpFile()
 	defer os.Remove(tmpFile.Name())
 	want := "http://test.net:8080"
-	server := habit.NewServer(tmpFile.Name(), want)
+	store := habit.NewFileStore(tmpFile.Name())
+	server := habit.NewServer(store, want)
 
 	got := server.Server.Addr
 	if want != got {
@@ -42,7 +44,8 @@ func TestHabitHandlerReturnsHabit(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/?habit=piano", nil)
 	tmpFile := CreateTmpFile()
 	defer os.Remove(tmpFile.Name())
-	server := habit.NewServer(tmpFile.Name(), address)
+	store := habit.NewFileStore(tmpFile.Name())
+	server := habit.NewServer(store, address)
 	server.Tracker = &habit.Tracker{
 		"reading": &habit.Habit{
 			Name: "reading",
@@ -70,7 +73,8 @@ func TestHabitHandlerWithGibberishReturns400(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/?garbage", nil)
 	tmpFile := CreateTmpFile()
 	defer os.Remove(tmpFile.Name())
-	server := habit.NewServer(tmpFile.Name(), address)
+	store := habit.NewFileStore(tmpFile.Name())
+	server := habit.NewServer(store, address)
 	server.HabitHandler(recorder, req)
 	res := recorder.Result()
 	defer res.Body.Close()
@@ -84,7 +88,8 @@ func TestServer_HabitHandleInterval(t *testing.T) {
 	t.Parallel()
 	tmpFile := CreateTmpFile()
 	defer os.Remove(tmpFile.Name())
-	server := habit.NewServer(tmpFile.Name(), address)
+	store := habit.NewFileStore(tmpFile.Name())
+	server := habit.NewServer(store, address)
 
 	testCases := []struct {
 		name   string
@@ -111,7 +116,8 @@ func TestRouting(t *testing.T) {
 	t.Parallel()
 	tmpFile := CreateTmpFile()
 	defer os.Remove(tmpFile.Name())
-	habitServer := habit.NewServer(tmpFile.Name(), address)
+	store := habit.NewFileStore(tmpFile.Name())
+	habitServer := habit.NewServer(store, address)
 	testServer := httptest.NewServer(habitServer.Handler())
 	defer testServer.Close()
 
