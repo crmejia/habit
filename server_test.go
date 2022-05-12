@@ -14,7 +14,7 @@ func TestNewHttpServer(t *testing.T) {
 	tmpFile := CreateTmpFile(t)
 
 	store := habit.NewFileStore(tmpFile.Name())
-	server := habit.NewServer(store, address)
+	server := habit.NewServer(store, localHostAddress)
 
 	if server.Tracker == nil {
 		t.Errorf("Tracker should not be nil")
@@ -30,7 +30,7 @@ func TestNewServerWithNonDefaultAddress(t *testing.T) {
 
 	got := server.Server.Addr
 	if want != got {
-		t.Errorf("want address to be %s, got %s", want, got)
+		t.Errorf("want localHostAddress to be %s, got %s", want, got)
 	}
 
 }
@@ -41,7 +41,7 @@ func TestHabitHandlerReturnsHabit(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/?habit=piano", nil)
 	tmpFile := CreateTmpFile(t)
 	store := habit.NewFileStore(tmpFile.Name())
-	server := habit.NewServer(store, address)
+	server := habit.NewServer(store, localHostAddress)
 	server.Tracker = &habit.Tracker{
 		"reading": &habit.Habit{
 			Name: "reading",
@@ -69,7 +69,7 @@ func TestHabitHandlerWithGibberishReturns400(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/?garbage", nil)
 	tmpFile := CreateTmpFile(t)
 	store := habit.NewFileStore(tmpFile.Name())
-	server := habit.NewServer(store, address)
+	server := habit.NewServer(store, localHostAddress)
 	server.HabitHandler(recorder, req)
 	res := recorder.Result()
 	defer res.Body.Close()
@@ -83,7 +83,7 @@ func TestServer_HabitHandleInterval(t *testing.T) {
 	t.Parallel()
 	tmpFile := CreateTmpFile(t)
 	store := habit.NewFileStore(tmpFile.Name())
-	server := habit.NewServer(store, address)
+	server := habit.NewServer(store, localHostAddress)
 
 	testCases := []struct {
 		name   string
@@ -110,7 +110,7 @@ func TestRouting(t *testing.T) {
 	t.Parallel()
 	tmpFile := CreateTmpFile(t)
 	store := habit.NewFileStore(tmpFile.Name())
-	habitServer := habit.NewServer(store, address)
+	habitServer := habit.NewServer(store, localHostAddress)
 	testServer := httptest.NewServer(habitServer.Handler())
 	defer testServer.Close()
 
@@ -140,4 +140,4 @@ func TestRouting(t *testing.T) {
 	}
 }
 
-const address = "127.0.0.1:8080"
+const localHostAddress = "127.0.0.1"

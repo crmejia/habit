@@ -2,6 +2,8 @@ package habit_test
 
 import (
 	"bytes"
+	"fmt"
+	"github.com/phayes/freeport"
 	"habit"
 	"net/http"
 	"strings"
@@ -89,12 +91,17 @@ func TestOptionsButNoArgsShowsUsageHelp(t *testing.T) {
 
 func TestOptionServerStartsHTTPServer(t *testing.T) {
 	t.Parallel()
+	tmpFile := CreateTmpFile(t)
+	freePort, err := freeport.GetFreePort()
+	if err != nil {
+		t.Fatal(err)
+	}
+	address := fmt.Sprintf("%s:%d", localHostAddress, freePort)
 	args := []string{"-s", address}
 	buffer := bytes.Buffer{}
-	tmpFile := CreateTmpFile(t)
 
 	go habit.RunCLI(tmpFile.Name(), args, &buffer)
-	resp, err := http.Get("http://localhost:8080")
+	resp, err := http.Get("http://" + address)
 	if err != nil {
 		t.Error(err)
 	}
