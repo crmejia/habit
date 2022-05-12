@@ -7,9 +7,15 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 )
 
-func TestNoArgsShowsAllHabits(t *testing.T) {
+const (
+	usage  = "Usage"
+	habits = "Habits:"
+)
+
+func TestNoArgsShowsUsageHelpOnNoHabits(t *testing.T) {
 	t.Parallel()
 	var args []string
 	buffer := bytes.Buffer{}
@@ -17,11 +23,38 @@ func TestNoArgsShowsAllHabits(t *testing.T) {
 	defer os.Remove(tmpFile.Name())
 	habit.RunCLI(tmpFile.Name(), args, &buffer)
 
-	want := "Habits:"
+	want := usage
 	got := buffer.String()
 
 	if !strings.Contains(got, want) {
-		t.Errorf("No arguments should print usage Message got: %s", got)
+		t.Errorf("No arguments and no previous habits should print usage Message got\n:  %s", got)
+	}
+}
+
+func TestNoArgsShowsAllHabitsWithExistingHabits(t *testing.T) {
+	t.Parallel()
+	var args []string
+	buffer := bytes.Buffer{}
+	tmpFile := CreateTmpFile()
+	defer os.Remove(tmpFile.Name())
+	writeTracker := habit.Tracker{
+		"piano": &habit.Habit{
+			Name:     "piano",
+			Interval: habit.WeeklyInterval,
+			Streak:   1,
+			DueDate:  time.Now().Add(habit.WeeklyInterval),
+		},
+	}
+
+	writeFileStore := habit.NewFileStore(tmpFile.Name())
+	writeFileStore.Write(&writeTracker)
+	habit.RunCLI(tmpFile.Name(), args, &buffer)
+
+	want := habits
+	got := buffer.String()
+	if !strings.Contains(got, want) {
+		// if habits exist in store, a summary of all habits should be displayed
+		t.Errorf("No arguments and previous habits should print a summary of all habits got\n:  %s", got)
 	}
 }
 func TestMoreThanOneArgShowsUsageHelp(t *testing.T) {
@@ -31,7 +64,7 @@ func TestMoreThanOneArgShowsUsageHelp(t *testing.T) {
 	tmpFile := CreateTmpFile()
 	defer os.Remove(tmpFile.Name())
 
-	want := "Usage"
+	want := usage
 	habit.RunCLI(tmpFile.Name(), args, &buffer)
 	got := buffer.String()
 
