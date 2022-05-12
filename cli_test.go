@@ -27,7 +27,7 @@ func TestNoArgsShowsUsageHelpOnNoHabits(t *testing.T) {
 	got := buffer.String()
 
 	if !strings.Contains(got, want) {
-		t.Errorf("No arguments and no previous habits should print usage Message got\n:  %s", got)
+		t.Errorf("no arguments and no previous habits should print usage Message got\n:  %s", got)
 	}
 }
 
@@ -54,9 +54,10 @@ func TestNoArgsShowsAllHabitsWithExistingHabits(t *testing.T) {
 	got := buffer.String()
 	if !strings.Contains(got, want) {
 		// if habits exist in store, a summary of all habits should be displayed
-		t.Errorf("No arguments and previous habits should print a summary of all habits got\n:  %s", got)
+		t.Errorf("no arguments and previous habits should print a summary of all habits got\n:  %s", got)
 	}
 }
+
 func TestMoreThanOneArgShowsUsageHelp(t *testing.T) {
 	t.Parallel()
 	args := []string{"blah", "blah"}
@@ -69,7 +70,7 @@ func TestMoreThanOneArgShowsUsageHelp(t *testing.T) {
 	got := buffer.String()
 
 	if !strings.Contains(got, want) {
-		t.Errorf("No arguments should print usage Message got: %s", got)
+		t.Errorf("too many arguments should print usage Message got: %s", got)
 	}
 }
 
@@ -85,11 +86,11 @@ func TestOptionsButNoArgsShowsUsageHelp(t *testing.T) {
 	got := buffer.String()
 
 	if !strings.Contains(got, want) {
-		t.Errorf("No arguments should print usage Message got: %s", got)
+		t.Errorf("only options and no arguments should print usage Message got: %s", got)
 	}
 }
 
-func TestOptionServerStartsAHTTPSERVER(t *testing.T) {
+func TestOptionServerStartsHTTPServer(t *testing.T) {
 	t.Parallel()
 	args := []string{"-s", address}
 	buffer := bytes.Buffer{}
