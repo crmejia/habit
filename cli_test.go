@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"habit"
 	"net/http"
-	"os"
 	"strings"
 	"testing"
 	"time"
@@ -19,8 +18,8 @@ func TestNoArgsShowsUsageHelpOnNoHabits(t *testing.T) {
 	t.Parallel()
 	var args []string
 	buffer := bytes.Buffer{}
-	tmpFile := CreateTmpFile()
-	defer os.Remove(tmpFile.Name())
+	tmpFile := CreateTmpFile(t)
+
 	habit.RunCLI(tmpFile.Name(), args, &buffer)
 
 	want := usage
@@ -35,8 +34,8 @@ func TestNoArgsShowsAllHabitsWithExistingHabits(t *testing.T) {
 	t.Parallel()
 	var args []string
 	buffer := bytes.Buffer{}
-	tmpFile := CreateTmpFile()
-	defer os.Remove(tmpFile.Name())
+	tmpFile := CreateTmpFile(t)
+
 	writeTracker := habit.Tracker{
 		"piano": &habit.Habit{
 			Name:     "piano",
@@ -62,8 +61,7 @@ func TestMoreThanOneArgShowsUsageHelp(t *testing.T) {
 	t.Parallel()
 	args := []string{"blah", "blah"}
 	buffer := bytes.Buffer{}
-	tmpFile := CreateTmpFile()
-	defer os.Remove(tmpFile.Name())
+	tmpFile := CreateTmpFile(t)
 
 	want := usage
 	habit.RunCLI(tmpFile.Name(), args, &buffer)
@@ -78,8 +76,7 @@ func TestOptionsButNoArgsShowsUsageHelp(t *testing.T) {
 	t.Parallel()
 	args := []string{"-f", "daily"}
 	buffer := bytes.Buffer{}
-	tmpFile := CreateTmpFile()
-	defer os.Remove(tmpFile.Name())
+	tmpFile := CreateTmpFile(t)
 
 	want := "Usage"
 	habit.RunCLI(tmpFile.Name(), args, &buffer)
@@ -94,8 +91,7 @@ func TestOptionServerStartsHTTPServer(t *testing.T) {
 	t.Parallel()
 	args := []string{"-s", address}
 	buffer := bytes.Buffer{}
-	tmpFile := CreateTmpFile()
-	defer os.Remove(tmpFile.Name())
+	tmpFile := CreateTmpFile(t)
 
 	go habit.RunCLI(tmpFile.Name(), args, &buffer)
 	resp, err := http.Get("http://localhost:8080")
