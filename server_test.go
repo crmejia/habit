@@ -9,6 +9,11 @@ import (
 	"testing"
 )
 
+const (
+	localHostAddress = "127.0.0.1"
+	notFound         = "not found"
+)
+
 func TestNewHttpServer(t *testing.T) {
 	t.Parallel()
 	tmpFile := CreateTmpFile(t)
@@ -139,5 +144,3 @@ func TestRouting(t *testing.T) {
 		res.Body.Close() //no defer at it might leak ;)
 	}
 }
-
-const localHostAddress = "127.0.0.1"
