@@ -9,13 +9,9 @@ habit. You can list all your streaks with `habit`. Also, you can create a weekly
 like so `habit -f weekly piano`
 ```
 Usage of habit:
-  -f string
-    	Set the frecuency of the habit: daily, weekly. (shorthand) (default "daily")
-  -frequency string
-    	Set the frecuency of the habit: daily, weekly. (default "daily")
-  -s	Runs habit as a HTTP Server (shorthand)
-  -server
-    	Runs habit as a HTTP Server
+-f string
+    	Set the frequency of the habit: daily, weekly. (default "daily")
+  -s	Runs habit as a HTTP Server
 ```
 
 ### Server Mode

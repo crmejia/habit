@@ -8,18 +8,16 @@ import (
 )
 
 func RunCLI(filename string, args []string, output io.Writer) {
-	flagSet := flag.NewFlagSet("habit", flag.ExitOnError)
+	flagSet := flag.NewFlagSet("habit", flag.ContinueOnError)
 	flagSet.SetOutput(output)
 
-	var frequency string
-	flagSet.StringVar(&frequency, "frequency", "daily", frequency_usage)
-	flagSet.StringVar(&frequency, "f", "daily", frequency_usage+shorthand)
+	frequency := flagSet.String("f", "daily", frequency_usage)
+	serverMode := flagSet.Bool("s", false, serverMode_usage)
 
-	var serverMode bool
-	flagSet.BoolVar(&serverMode, "server", false, serverMode_usage)
-	flagSet.BoolVar(&serverMode, "s", false, serverMode_usage+shorthand)
-
-	flagSet.Parse(args)
+	err := flagSet.Parse(args)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	if len(flagSet.Args()) > 1 {
 		fmt.Fprintln(output, "too many args")
@@ -46,14 +44,14 @@ func RunCLI(filename string, args []string, output io.Writer) {
 		}
 	}
 
-	if len(flagSet.Args()) == 0 && !serverMode {
+	if len(flagSet.Args()) == 0 && !(*serverMode) {
 		// no habit specified
 		fmt.Fprintln(output, help_intro)
 		flagSet.Usage()
 		return
 	}
 
-	if serverMode {
+	if *serverMode {
 		address := defaultTCPAddress
 		if len(flagSet.Args()) > 0 {
 			address = flagSet.Args()[0]
@@ -61,15 +59,14 @@ func RunCLI(filename string, args []string, output io.Writer) {
 		runHTTPServer(store, address)
 	} else {
 		habitName := flagSet.Args()[0]
-		runCLI(store, habitName, frequency)
+		runCLI(store, habitName, *frequency)
 	}
 	return
 }
 
 const (
-	frequency_usage  = "Set the frecuency of the habit: daily, weekly."
+	frequency_usage  = "Set the frequency of the habit: daily, weekly."
 	serverMode_usage = "Runs habit as a HTTP Server"
-	shorthand        = " (shorthand)"
 	help_intro       = `habit is an application to assist you in building habits
      habit <options> <HABIT_NAME> -- to create/update a new habit
 habit  -- to list all habits`
