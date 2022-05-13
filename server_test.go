@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 )
 
 const (
@@ -113,8 +114,14 @@ func TestServer_HabitHandleInterval(t *testing.T) {
 
 func TestRouting(t *testing.T) {
 	t.Parallel()
-	tmpFile := CreateTmpFile(t)
-	store := habit.NewFileStore(tmpFile.Name())
+	tracker := habit.Tracker{
+		"piano": &habit.Habit{
+			Name:    "piano",
+			Streak:  8,
+			DueDate: time.Now().Add(habit.DailyInterval),
+		},
+	}
+	store := habit.FileStore{Tracker: tracker}
 	habitServer := habit.NewServer(store, localHostAddress)
 	testServer := httptest.NewServer(habitServer.Handler())
 	defer testServer.Close()

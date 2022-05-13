@@ -103,6 +103,7 @@ func TestOptionServerStartsHTTPServerReturns404NoHabits(t *testing.T) {
 	buffer := bytes.Buffer{}
 
 	go habit.RunCLI(tmpFile.Name(), args, &buffer)
+	time.Sleep(2 * time.Second)
 	resp, err := http.Get("http://" + address)
 	if err != nil {
 		t.Fatal(err)
