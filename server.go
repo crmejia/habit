@@ -48,8 +48,13 @@ func (server *server) HabitHandler(w http.ResponseWriter, r *http.Request) {
 	//parsing querystring
 	habitName := r.FormValue("habit")
 	if r.RequestURI == "/all" || r.RequestURI == "/" {
-		fmt.Fprint(w, AllHabits(server.Store))
-		return
+		if len(*server.Tracker) > 0 {
+			fmt.Fprint(w, AllHabits(server.Store))
+			return
+		} else {
+			http.Error(w, "not found", http.StatusNotFound)
+			return
+		}
 	} else if habitName == "" || r.URL.Path != "/" {
 		http.Error(w, "cannot parse querystring", http.StatusBadRequest)
 		return
@@ -63,6 +68,7 @@ func (server *server) HabitHandler(w http.ResponseWriter, r *http.Request) {
 		interval = WeeklyInterval
 	} else {
 		http.Error(w, "invalid interval", http.StatusBadRequest)
+		return
 	}
 
 	habit, ok := server.Tracker.FetchHabit(habitName)
@@ -75,6 +81,7 @@ func (server *server) HabitHandler(w http.ResponseWriter, r *http.Request) {
 		err := server.Tracker.CreateHabit(habit)
 		if err != nil {
 			http.Error(w, "not able to create habit", http.StatusInternalServerError)
+			return
 		}
 	}
 	fmt.Fprint(w, habit)

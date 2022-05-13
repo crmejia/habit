@@ -22,6 +22,7 @@ type Storable interface {
 
 type FileStore struct {
 	filename string
+	Tracker  Tracker
 }
 
 func NewFileStore(filename string) FileStore {
@@ -29,24 +30,28 @@ func NewFileStore(filename string) FileStore {
 }
 
 func (s FileStore) Load() (Tracker, error) {
-	trackerFile, err := os.OpenFile(s.filename, os.O_CREATE|os.O_RDWR, 0600)
-	if err != nil {
-		return nil, err
-	}
-	defer trackerFile.Close()
-
-	fileBytes, err := ioutil.ReadAll(trackerFile)
-	if err != nil {
-		return nil, err
-	}
-	ht := Tracker{}
-	if len(fileBytes) > 0 {
-		err = json.Unmarshal(fileBytes, &ht)
+	if s.Tracker == nil {
+		trackerFile, err := os.OpenFile(s.filename, os.O_CREATE|os.O_RDWR, 0600)
 		if err != nil {
 			return nil, err
 		}
+		defer trackerFile.Close()
+
+		fileBytes, err := ioutil.ReadAll(trackerFile)
+		if err != nil {
+			return nil, err
+		}
+		ht := Tracker{}
+		if len(fileBytes) > 0 {
+			err = json.Unmarshal(fileBytes, &ht)
+			if err != nil {
+				return nil, err
+			}
+		}
+		s.Tracker = ht
+		return ht, nil
 	}
-	return ht, nil
+	return s.Tracker, nil
 }
 
 func (s FileStore) Write(tracker *Tracker) error {

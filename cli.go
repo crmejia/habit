@@ -27,18 +27,23 @@ func RunCLI(filename string, args []string, output io.Writer) {
 		flagSet.Usage()
 		return
 	}
-	//var store Store
-	//if db
-	//store = newDBStore
-	// else if file
-	//store = newFileStore
 	store := NewFileStore(filename)
-
+	tracker, err := store.Load()
+	if err != nil {
+		log.Fatal(err)
+	}
 	//TODO move this to runCLI or at least move after parsing
 	//this might mean making changing to AllHabits(store) instead of a method on Tracker
 	if len(args) == 0 {
-		fmt.Fprintln(output, AllHabits(store))
-		return
+		if len(tracker) > 0 {
+			fmt.Fprintln(output, AllHabits(store))
+			return
+		} else {
+			// no previous habits
+			fmt.Fprintln(output, help_intro)
+			flagSet.Usage()
+			return
+		}
 	}
 
 	if len(flagSet.Args()) == 0 && !serverMode {

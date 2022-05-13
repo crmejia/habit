@@ -5,18 +5,22 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"strings"
 	"testing"
+	"time"
+)
+
+const (
+	localHostAddress = "127.0.0.1"
+	notFound         = "not found"
 )
 
 func TestNewHttpServer(t *testing.T) {
 	t.Parallel()
-	tmpFile := CreateTmpFile()
-	defer os.Remove(tmpFile.Name())
+	tmpFile := CreateTmpFile(t)
 
 	store := habit.NewFileStore(tmpFile.Name())
-	server := habit.NewServer(store, address)
+	server := habit.NewServer(store, localHostAddress)
 
 	if server.Tracker == nil {
 		t.Errorf("Tracker should not be nil")
@@ -25,15 +29,14 @@ func TestNewHttpServer(t *testing.T) {
 
 func TestNewServerWithNonDefaultAddress(t *testing.T) {
 	t.Parallel()
-	tmpFile := CreateTmpFile()
-	defer os.Remove(tmpFile.Name())
+	tmpFile := CreateTmpFile(t)
 	want := "http://test.net:8080"
 	store := habit.NewFileStore(tmpFile.Name())
 	server := habit.NewServer(store, want)
 
 	got := server.Server.Addr
 	if want != got {
-		t.Errorf("want address to be %s, got %s", want, got)
+		t.Errorf("want localHostAddress to be %s, got %s", want, got)
 	}
 
 }
@@ -42,10 +45,9 @@ func TestHabitHandlerReturnsHabit(t *testing.T) {
 	t.Parallel()
 	recorder := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/?habit=piano", nil)
-	tmpFile := CreateTmpFile()
-	defer os.Remove(tmpFile.Name())
+	tmpFile := CreateTmpFile(t)
 	store := habit.NewFileStore(tmpFile.Name())
-	server := habit.NewServer(store, address)
+	server := habit.NewServer(store, localHostAddress)
 	server.Tracker = &habit.Tracker{
 		"reading": &habit.Habit{
 			Name: "reading",
@@ -71,10 +73,9 @@ func TestHabitHandlerWithGibberishReturns400(t *testing.T) {
 	t.Parallel()
 	recorder := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/?garbage", nil)
-	tmpFile := CreateTmpFile()
-	defer os.Remove(tmpFile.Name())
+	tmpFile := CreateTmpFile(t)
 	store := habit.NewFileStore(tmpFile.Name())
-	server := habit.NewServer(store, address)
+	server := habit.NewServer(store, localHostAddress)
 	server.HabitHandler(recorder, req)
 	res := recorder.Result()
 	defer res.Body.Close()
@@ -86,10 +87,9 @@ func TestHabitHandlerWithGibberishReturns400(t *testing.T) {
 
 func TestServer_HabitHandleInterval(t *testing.T) {
 	t.Parallel()
-	tmpFile := CreateTmpFile()
-	defer os.Remove(tmpFile.Name())
+	tmpFile := CreateTmpFile(t)
 	store := habit.NewFileStore(tmpFile.Name())
-	server := habit.NewServer(store, address)
+	server := habit.NewServer(store, localHostAddress)
 
 	testCases := []struct {
 		name   string
@@ -114,10 +114,15 @@ func TestServer_HabitHandleInterval(t *testing.T) {
 
 func TestRouting(t *testing.T) {
 	t.Parallel()
-	tmpFile := CreateTmpFile()
-	defer os.Remove(tmpFile.Name())
-	store := habit.NewFileStore(tmpFile.Name())
-	habitServer := habit.NewServer(store, address)
+	tracker := habit.Tracker{
+		"piano": &habit.Habit{
+			Name:    "piano",
+			Streak:  8,
+			DueDate: time.Now().Add(habit.DailyInterval),
+		},
+	}
+	store := habit.FileStore{Tracker: tracker}
+	habitServer := habit.NewServer(store, localHostAddress)
 	testServer := httptest.NewServer(habitServer.Handler())
 	defer testServer.Close()
 
@@ -146,5 +151,3 @@ func TestRouting(t *testing.T) {
 		res.Body.Close() //no defer at it might leak ;)
 	}
 }
-
-const address = "127.0.0.1:8080"

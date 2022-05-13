@@ -2,7 +2,6 @@ package habit_test
 
 import (
 	"habit"
-	"log"
 	"os"
 	"testing"
 	"time"
@@ -18,8 +17,7 @@ func TestFileStoreRoundtripWriteRead(t *testing.T) {
 			DueDate:  time.Now().Add(habit.WeeklyInterval),
 		},
 	}
-	tmpFile := CreateTmpFile()
-	defer os.Remove(tmpFile.Name())
+	tmpFile := CreateTmpFile(t)
 
 	writeFileStore := habit.NewFileStore(tmpFile.Name())
 	writeFileStore.Write(&writeTracker)
@@ -77,11 +75,14 @@ func TestDBStoreRoundtripWriteRead(t *testing.T) {
 		t.Errorf("want loaded file to contain the same habit that was written")
 	}
 }
-func CreateTmpFile() *os.File {
-	tmpFile, err := os.CreateTemp("", "")
+
+// CreateTmpFile creates a temporary file with a random name in a temporary directory. This temporary directory gets
+// removed by t.Cleanup as part of the test so there no need to defer os.Remove the temp file
+func CreateTmpFile(t *testing.T) *os.File {
+	tmpDir := t.TempDir()
+	tmpFile, err := os.CreateTemp(tmpDir, "")
 	if err != nil {
-		log.Fatal("couldn't create tmp file")
+		t.Fatal("couldn't create tmp file")
 	}
-	defer os.Remove(tmpFile.Name())
 	return tmpFile
 }

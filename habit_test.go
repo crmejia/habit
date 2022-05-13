@@ -138,22 +138,33 @@ func TestTracker_FetchHabitResetsStreakOnWeeklyHabit(t *testing.T) {
 	}
 }
 
-//todo fix test
-//func TestAllHabitsReportsCurrentStreaks(t *testing.T) {
-//	t.Parallel()
-//	tracker := habit.Tracker{
-//		"piano": &habit.Habit{
-//			Name:    "piano",
-//			Streak:  8,
-//			DueDate: time.Now().Add(habit.DailyInterval),
-//		},
-//	}
-//	want := "Habits:\nYou're currently on a 8-day streak for 'piano'. Stick to it!\n"
-//	got := tracker.AllHabits()
-//	if want != got {
-//		t.Errorf("want:\n %s \ngot:\n %s", want, got)
-//	}
-//}
+func TestAllHabitsReturnsHabitStreaks(t *testing.T) {
+	t.Parallel()
+	tracker := habit.Tracker{
+		"piano": &habit.Habit{
+			Name:    "piano",
+			Streak:  8,
+			DueDate: time.Now().Add(habit.DailyInterval),
+		},
+	}
+	store := habit.FileStore{Tracker: tracker}
+	want := "Habits:\nYou're currently on a 8-day streak for 'piano'. Stick to it!\n"
+	got := habit.AllHabits(store)
+	if want != got {
+		t.Errorf("want:\n %s \ngot:\n %s", want, got)
+	}
+}
+
+func TestAllHabitsReturnsEmptyStringOnNoHabits(t *testing.T) {
+	t.Parallel()
+	tracker := habit.Tracker{}
+	want := ""
+	store := habit.FileStore{Tracker: tracker}
+	got := habit.AllHabits(store)
+	if want != got {
+		t.Errorf("want:\n %s \ngot:\n %s", want, got)
+	}
+}
 
 func TestTracker_CreateHabitCreatesAWeeklyHabit(t *testing.T) {
 	t.Parallel()

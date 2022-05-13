@@ -68,9 +68,12 @@ func (ht *Tracker) CreateHabit(habit *Habit) error {
 }
 func AllHabits(store Storable) string {
 	ht := NewTracker(store)
-	message := "Habits:\n"
-	for _, habit := range ht {
-		message += fmt.Sprintf(habitStatus+"\n", habit.Streak, habit.Name)
+	var message string
+	if len(ht) > 0 {
+		message = "Habits:\n"
+		for _, habit := range ht {
+			message += fmt.Sprintf(habitStatus+"\n", habit.Streak, habit.Name)
+		}
 	}
 	return message
 }
