@@ -10,6 +10,23 @@ import (
 	"errors"
 )
 
+const (
+	NewMessage MessageKind = iota
+	RepeatMessage
+	StreakMessage
+	BrokenMessage
+
+	DailyInterval  = 24 * time.Hour
+	WeeklyInterval = 7 * 24 * time.Hour
+
+	newHabit      = "Good luck with your new habit '%s'! Don't forget to do it again %s."
+	streakHabit   = "Nice work: you've done the habit '%s' for %d %s in a row now. Keep it up!"
+	repeatedHabit = "You already logged '%s' today. Keep it up!"
+	brokeStreak   = "You last did the habit '%s' %.0f %s ago, so you're starting a new streak today. Good luck!"
+	habitStatus   = "You're currently on a %d-day streak for '%s'. Stick to it!"
+)
+
+// A Habit represents a Habit state
 type Habit struct {
 	Name     string
 	Streak   int
@@ -18,10 +35,11 @@ type Habit struct {
 	Message  string
 }
 
+// A Tracker is a map of habits
 type Tracker map[string]*Habit
 
-func NewTracker(store Storable) Tracker {
-	//err := tracker.Load
+//NewTracker returns a new tracker. If there are previous habits they're loaded onto the tracker.
+func NewTracker(store Store) Tracker {
 	tracker, err := store.Load()
 
 	if err != nil {
@@ -30,6 +48,7 @@ func NewTracker(store Storable) Tracker {
 	return tracker
 }
 
+//FetchHabit returns an existing habit. If the habit doesn't exist it returns false.
 func (ht *Tracker) FetchHabit(name string) (*Habit, bool) {
 	habit, ok := (*ht)[name]
 	if !ok {
@@ -53,6 +72,7 @@ func (ht *Tracker) FetchHabit(name string) (*Habit, bool) {
 	return habit, true
 }
 
+//CreateHabit creates a new habit and inserts it in the tracker
 func (ht *Tracker) CreateHabit(habit *Habit) error {
 	_, ok := (*ht)[habit.Name]
 	if ok {
@@ -66,7 +86,9 @@ func (ht *Tracker) CreateHabit(habit *Habit) error {
 	(*ht)[habit.Name] = habit
 	return nil
 }
-func AllHabits(store Storable) string {
+
+//AllHabits returns a summary of all habits. If there are no habits it returns and empty string.
+func AllHabits(store Store) string {
 	ht := NewTracker(store)
 	var message string
 	if len(ht) > 0 {
@@ -82,6 +104,7 @@ func (h Habit) String() string {
 	return h.Message
 }
 
+//GenerateMessage creates the appropriate message for a given habit.
 func (h *Habit) GenerateMessage(kind MessageKind) {
 	var intervalString string
 	switch kind {
@@ -113,35 +136,16 @@ func (h *Habit) GenerateMessage(kind MessageKind) {
 	}
 }
 
-const (
-	newHabit      = "Good luck with your new habit '%s'! Don't forget to do it again %s."
-	streakHabit   = "Nice work: you've done the habit '%s' for %d %s in a row now. Keep it up!"
-	repeatedHabit = "You already logged '%s' today. Keep it up!"
-	brokeStreak   = "You last did the habit '%s' %.0f %s ago, so you're starting a new streak today. Good luck!"
-	habitStatus   = "You're currently on a %d-day streak for '%s'. Stick to it!"
-)
-
+//MessageKind represents the message to be displayed
 type MessageKind int
 
-const (
-	NewMessage MessageKind = iota
-	RepeatMessage
-	StreakMessage
-	BrokenMessage
-)
-
-//func SameDay returns true if the days are the same ignoring hours, mins,etc
+// SameDay returns true if the days are the same ignoring hours, minutes,etc
 func SameDay(d1, d2 time.Time) bool {
 	if d1.Year() == d2.Year() && d1.Month() == d2.Month() && d1.Day() == d2.Day() {
 		return true
 	}
 	return false
 }
-
-const (
-	DailyInterval  time.Duration = 24 * time.Hour
-	WeeklyInterval               = 7 * 24 * time.Hour
-)
 
 var validInterval = map[time.Duration]bool{
 	DailyInterval:  true,

@@ -7,12 +7,21 @@ import (
 	"log"
 )
 
+const (
+	frequencyUsage  = "Set the frequency of the habit: daily, weekly."
+	serverModeUsage = "Runs habit as a HTTP Server"
+	helpIntro       = `habit is an application to assist you in building habits
+     habit <options> <HABIT_NAME> -- to create/update a new habit
+habit  -- to list all habits`
+)
+
+//RunCLI parses arguments and runs habit tracker
 func RunCLI(filename string, args []string, output io.Writer) {
 	flagSet := flag.NewFlagSet("habit", flag.ContinueOnError)
 	flagSet.SetOutput(output)
 
-	frequency := flagSet.String("f", "daily", frequency_usage)
-	serverMode := flagSet.Bool("s", false, serverMode_usage)
+	frequency := flagSet.String("f", "daily", frequencyUsage)
+	serverMode := flagSet.Bool("s", false, serverModeUsage)
 
 	err := flagSet.Parse(args)
 	if err != nil {
@@ -21,7 +30,7 @@ func RunCLI(filename string, args []string, output io.Writer) {
 
 	if len(flagSet.Args()) > 1 {
 		fmt.Fprintln(output, "too many args")
-		fmt.Fprintln(output, help_intro)
+		fmt.Fprintln(output, helpIntro)
 		flagSet.Usage()
 		return
 	}
@@ -30,23 +39,21 @@ func RunCLI(filename string, args []string, output io.Writer) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	//TODO move this to runCLI or at least move after parsing
-	//this might mean making changing to AllHabits(store) instead of a method on Tracker
+
 	if len(args) == 0 {
 		if len(tracker) > 0 {
 			fmt.Fprintln(output, AllHabits(store))
 			return
-		} else {
-			// no previous habits
-			fmt.Fprintln(output, help_intro)
-			flagSet.Usage()
-			return
 		}
+		// no previous habits
+		fmt.Fprintln(output, helpIntro)
+		flagSet.Usage()
+		return
 	}
 
 	if len(flagSet.Args()) == 0 && !(*serverMode) {
 		// no habit specified
-		fmt.Fprintln(output, help_intro)
+		fmt.Fprintln(output, helpIntro)
 		flagSet.Usage()
 		return
 	}
@@ -64,15 +71,7 @@ func RunCLI(filename string, args []string, output io.Writer) {
 	return
 }
 
-const (
-	frequency_usage  = "Set the frequency of the habit: daily, weekly."
-	serverMode_usage = "Runs habit as a HTTP Server"
-	help_intro       = `habit is an application to assist you in building habits
-     habit <options> <HABIT_NAME> -- to create/update a new habit
-habit  -- to list all habits`
-)
-
-func runCLI(store Storable, habitName, frequency string) {
+func runCLI(store Store, habitName, frequency string) {
 	ht := NewTracker(store)
 	habit, ok := ht.FetchHabit(habitName)
 
@@ -88,7 +87,10 @@ func runCLI(store Storable, habitName, frequency string) {
 			fmt.Printf("unknown frecuency %s", frequency)
 			return
 		}
-		ht.CreateHabit(habit)
+		err := ht.CreateHabit(habit)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	err := store.Write(&ht)
@@ -99,7 +101,7 @@ func runCLI(store Storable, habitName, frequency string) {
 	fmt.Println(habit)
 }
 
-func runHTTPServer(store Storable, address string) {
+func runHTTPServer(store Store, address string) {
 	server := NewServer(store, address)
 	server.Run()
 }
