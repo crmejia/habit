@@ -123,7 +123,7 @@ func TestRouting(t *testing.T) {
 	}
 	store := habit.FileStore{Tracker: tracker}
 	habitServer := habit.NewServer(store, localHostAddress)
-	testServer := httptest.NewServer(habitServer.Handler())
+	testServer := httptest.NewServer(habitServer.Router())
 	defer testServer.Close()
 
 	testCases := []struct {

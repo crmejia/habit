@@ -7,16 +7,18 @@ import (
 	"time"
 )
 
-//todo chicken or the egg?
-//Should the Tracker have server inside? but since Tracker is a map
-//it is not possible. Think about the best away to represent this relationship
+const (
+	defaultTCPAddress = "127.0.0.1:8080"
+)
+
 type server struct {
 	Server  *http.Server
 	Tracker *Tracker
-	Store   Storable
+	Store   Store
 }
 
-func NewServer(store Storable, address string) *server {
+//NewServer returns a new server
+func NewServer(store Store, address string) *server {
 	tracker := NewTracker(store)
 	server := server{
 		Server: &http.Server{
@@ -27,8 +29,9 @@ func NewServer(store Storable, address string) *server {
 	return &server
 }
 
+//Run listens and serves http
 func (server *server) Run() {
-	router := server.Handler()
+	router := server.Router()
 	server.Server.Handler = router
 
 	err := server.Server.ListenAndServe()
@@ -37,13 +40,15 @@ func (server *server) Run() {
 	}
 }
 
-func (server *server) Handler() http.Handler {
+//Router returns a http.Handler with the appropriate routes
+func (server *server) Router() http.Handler {
 	router := http.NewServeMux()
 	router.HandleFunc("/", server.HabitHandler)
 
 	return router
 }
 
+//HabitHandler Handler that servers habits.
 func (server *server) HabitHandler(w http.ResponseWriter, r *http.Request) {
 	//parsing querystring
 	habitName := r.FormValue("habit")
@@ -51,10 +56,9 @@ func (server *server) HabitHandler(w http.ResponseWriter, r *http.Request) {
 		if len(*server.Tracker) > 0 {
 			fmt.Fprint(w, AllHabits(server.Store))
 			return
-		} else {
-			http.Error(w, "not found", http.StatusNotFound)
-			return
 		}
+		http.Error(w, "not found", http.StatusNotFound)
+		return
 	} else if habitName == "" || r.URL.Path != "/" {
 		http.Error(w, "cannot parse querystring", http.StatusBadRequest)
 		return
@@ -86,7 +90,3 @@ func (server *server) HabitHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Fprint(w, habit)
 }
-
-const (
-	defaultTCPAddress = "127.0.0.1:8080"
-)
