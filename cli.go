@@ -68,7 +68,6 @@ func RunCLI(filename string, args []string, output io.Writer) {
 		habitName := flagSet.Args()[0]
 		runCLI(store, habitName, *frequency)
 	}
-	return
 }
 
 func runCLI(store Store, habitName, frequency string) {
@@ -79,11 +78,12 @@ func runCLI(store Store, habitName, frequency string) {
 		habit = &Habit{
 			Name: habitName,
 		}
-		if frequency == "daily" {
+		switch frequency {
+		case "daily":
 			habit.Interval = DailyInterval
-		} else if frequency == "weekly" {
+		case "weekly":
 			habit.Interval = WeeklyInterval
-		} else {
+		default:
 			fmt.Printf("unknown frecuency %s", frequency)
 			return
 		}

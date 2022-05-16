@@ -52,7 +52,7 @@ func (s FileStore) Load() (Tracker, error) {
 	return s.Tracker, nil
 }
 
-//Write write habits to file
+//Write writes habits to file
 func (s FileStore) Write(tracker *Tracker) error {
 	trackerFile, err := os.OpenFile(s.filename, os.O_CREATE|os.O_RDWR, 0600)
 	if err != nil {
