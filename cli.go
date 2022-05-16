@@ -66,11 +66,11 @@ func RunCLI(filename string, args []string, output io.Writer) {
 		runHTTPServer(store, address)
 	} else {
 		habitName := flagSet.Args()[0]
-		runCLI(store, habitName, *frequency)
+		runCLI(store, habitName, *frequency, output)
 	}
 }
 
-func runCLI(store Store, habitName, frequency string) {
+func runCLI(store Store, habitName, frequency string, output io.Writer) {
 	ht := NewTracker(store)
 	habit, ok := ht.FetchHabit(habitName)
 
@@ -84,7 +84,7 @@ func runCLI(store Store, habitName, frequency string) {
 		case "weekly":
 			habit.Interval = WeeklyInterval
 		default:
-			fmt.Printf("unknown frecuency %s", frequency)
+			fmt.Fprintf(output, "unknown frequency %s", frequency)
 			return
 		}
 		err := ht.CreateHabit(habit)
@@ -98,7 +98,7 @@ func runCLI(store Store, habitName, frequency string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println(habit)
+	fmt.Fprint(output, habit)
 }
 
 func runHTTPServer(store Store, address string) {

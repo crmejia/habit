@@ -165,3 +165,74 @@ func TestOptionServerStartsHTTPServerReturns200ExistingHabits(t *testing.T) {
 		t.Errorf("want response body to be:\n %s \ngot:\n %s", want, got)
 	}
 }
+
+func TestExistingHabitShowsStreakMessage(t *testing.T) {
+	t.Parallel()
+	args := []string{"piano"}
+	buffer := bytes.Buffer{}
+	tmpFile := CreateTmpFile(t)
+
+	writeTracker := habit.Tracker{
+		"piano": &habit.Habit{
+			Name:     "piano",
+			Interval: habit.WeeklyInterval,
+			Streak:   1,
+			DueDate:  time.Now().Add(habit.WeeklyInterval),
+		},
+	}
+
+	writeFileStore := habit.NewFileStore(tmpFile.Name())
+	writeFileStore.Write(&writeTracker)
+	habit.RunCLI(tmpFile.Name(), args, &buffer)
+
+	want := "piano"
+	got := buffer.String()
+	if !strings.Contains(got, want) {
+		t.Errorf("existing habit should print streak message. Got:\n  %s", got)
+	}
+}
+
+func TestNewHabitShowsStreakMessage(t *testing.T) {
+	t.Parallel()
+	args := []string{"piano"}
+	buffer := bytes.Buffer{}
+	tmpFile := CreateTmpFile(t)
+
+	habit.RunCLI(tmpFile.Name(), args, &buffer)
+
+	want := "piano"
+	got := buffer.String()
+	if !strings.Contains(got, want) {
+		t.Errorf("new habit should print streak message. Got:\n  %s", got)
+	}
+}
+
+func TestNewHabitInvalidFrequencyFails(t *testing.T) {
+	t.Parallel()
+	args := []string{"-f", "yellow", "piano"}
+	buffer := bytes.Buffer{}
+	tmpFile := CreateTmpFile(t)
+
+	habit.RunCLI(tmpFile.Name(), args, &buffer)
+
+	want := "unknown frequency"
+	got := buffer.String()
+	if !strings.Contains(got, want) {
+		t.Errorf("invalid frequency should print error messasge. Got: \n  %s", got)
+	}
+}
+
+func TestNewWeeklyHabitShowsStreakMessage(t *testing.T) {
+	t.Parallel()
+	args := []string{"-f", "weekly", "piano"}
+	buffer := bytes.Buffer{}
+	tmpFile := CreateTmpFile(t)
+
+	habit.RunCLI(tmpFile.Name(), args, &buffer)
+
+	want := "piano"
+	got := buffer.String()
+	if !strings.Contains(got, want) {
+		t.Errorf("new weekly habit should print streak message. Got:\n  %s", got)
+	}
+}
