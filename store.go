@@ -1,9 +1,15 @@
 package habit
 
-import "errors"
+import (
+	"errors"
+)
 
 type Habit struct {
-	Name string
+	Name   string
+	Streak int
+	//DueDate  time.Time
+	//Interval time.Duration
+	//Message  string
 }
 
 // the point of the store interface is to wrap data around the basic go map struct.
