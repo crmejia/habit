@@ -1,176 +1,72 @@
 package habit
 
-import (
-	"database/sql"
-	"encoding/json"
-	_ "github.com/mattn/go-sqlite3" //DB driver for SQLite
-	"io/ioutil"
-	"os"
-	"time"
-)
+import "errors"
 
-//Store represents the behavior of loading and writing habit data
-type Store interface {
-	Load() (Tracker, error)
-	Write(tracker *Tracker) error
+type Habit struct {
+	Name string
 }
 
-//FileStore represents a store backer by a file
-type FileStore struct {
-	filename string
-	Tracker  Tracker
+// the point of the store interface is to wrap data around the basic go map struct.
+//that means that for testing a memory still will do see store_test for more comments.
+type MemoryStore struct {
+	Habits map[string]*Habit
 }
 
-//NewFileStore returns a new FileStore
-func NewFileStore(filename string) FileStore {
-	return FileStore{filename: filename}
+var NilHabitError = errors.New("habit cannot be nil")
+
+func OpenStore() MemoryStore {
+	//here a file store or a db store would get the data from persistence.
+	memoryStore := MemoryStore{
+		Habits: map[string]*Habit{},
+	}
+	return memoryStore
 }
 
-//Load loads habits from file
-func (s FileStore) Load() (Tracker, error) {
-	if s.Tracker == nil {
-		trackerFile, err := os.OpenFile(s.filename, os.O_CREATE|os.O_RDWR, 0600)
-		if err != nil {
-			return nil, err
-		}
-		defer trackerFile.Close()
-
-		fileBytes, err := ioutil.ReadAll(trackerFile)
-		if err != nil {
-			return nil, err
-		}
-		ht := Tracker{}
-		if len(fileBytes) > 0 {
-			err = json.Unmarshal(fileBytes, &ht)
-			if err != nil {
-				return nil, err
-			}
-		}
-		s.Tracker = ht
-		return ht, nil
-	}
-	return s.Tracker, nil
-}
-
-//Write writes habits to file
-func (s FileStore) Write(tracker *Tracker) error {
-	trackerFile, err := os.OpenFile(s.filename, os.O_CREATE|os.O_RDWR, 0600)
-	if err != nil {
-		return err
-	}
-	defer trackerFile.Close()
-
-	fileBytes, err := json.Marshal(tracker)
-	if err != nil {
-		return err
-	}
-	trackerFile.Truncate(0)
-	trackerFile.Seek(0, 0)
-	_, err = trackerFile.Write(fileBytes)
-	if err != nil {
-		return err
-	}
-	if err != nil {
-		return err
-	}
-	trackerFile.Close()
-	return nil
-}
-
-//DBStore represents a store backed by a SQLite DB
-type DBStore struct {
-	dbSource string
-}
-
-//NewDBStore returns a new DBStore
-func NewDBStore(dbSource string) DBStore {
-	return DBStore{dbSource: dbSource}
-}
-
-//Load loads habits from DB
-func (s DBStore) Load() (Tracker, error) {
-	db, err := sql.Open("sqlite3", s.dbSource)
-	if err != nil {
-		return nil, err
-	}
-	defer db.Close()
-
-	_, err = db.Exec(createTable)
-	if err != nil {
-		return nil, err
-	}
-
-	rows, err := db.Query(getAllHabits)
-	if err != nil {
-		return nil, err
-	}
-	tracker := Tracker{}
-	for rows.Next() {
-		var (
-			name     string
-			streak   int
-			interval int64
-		)
-		err = rows.Scan(&name, &streak, &interval)
-		if err != nil {
-			return nil, err
-		}
-		habit := Habit{
-			Name:   name,
-			Streak: streak,
-			//DueDate:  time.Time{},
-			Interval: time.Duration(interval),
-			//Message:  "",
-		}
-		tracker[habit.Name] = &habit
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return tracker, nil
-}
-
-//Write writes habits to DB
-func (s DBStore) Write(tracker *Tracker) error {
-	db, err := sql.Open("sqlite3", s.dbSource)
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-
-	_, err = db.Exec(createTable)
-	if err != nil {
-		return err
-	}
-
-	stmt, err := db.Prepare(insertHabit)
-	if err != nil {
-		return err
-	}
-
-	for _, habit := range *tracker {
-		_, err := stmt.Exec(habit.Name, habit.Streak, int64(habit.Interval))
-		if err != nil {
-			return err
-		}
+//Get should get return a habit always? No, because that would limit the user of the package.It would mean get does
+//get+create changing the signature to Get(habit) because name is only one attribute not the whole habit and the data
+// needs to be UPDATE in that case, not created... See where this rabbit hole goes?
+//in case the get fails the function has to go ahead and do some other two behaviors(create, update)? The answer is
+//no, this is business logic, not a CRUD logic. So the user( habit manager or habit consumer, whatever other package
+//leverages this one) is free to implement to meet their needs. The user gets to decide what to do with it. If the user
+//wants to create a habit that doesn't exist(after trying a get) they can do so at their own discretion not my library
+//limiting their use case by short vision.
+func (s *MemoryStore) Get(name string) *Habit {
+	habit, ok := s.Habits[name]
+	if ok {
+		return habit
 	}
 	return nil
 }
 
-const createTable = `
-CREATE TABLE IF NOT EXISTS habit(
-id INTEGER NOT NULL PRIMARY KEY,
-name VARCHAR NOT NULL,
-streak INTEGER NOT NULL,
-interval INTEGER NOT NULL
-);`
+func (s *MemoryStore) Create(habit *Habit) error {
+	if habit == nil {
+		return NilHabitError
+	}
 
-//todo
-//dueDate DATETIME NOT NULL,
+	if _, ok := s.Habits[habit.Name]; ok {
+		return errors.New("habit already exists")
+	}
+	s.Habits[habit.Name] = habit
+	return nil
+}
 
-const getAllHabits = `
-SELECT name,streak,interval FROM habit;
-`
-const insertHabit = `
-INSERT INTO habit(name,streak,interval) VALUES(?,?,?)
-`
+func (s *MemoryStore) Update(habit *Habit) error {
+	if habit == nil {
+		return NilHabitError
+	}
+
+	if _, ok := s.Habits[habit.Name]; !ok {
+		return errors.New("cannot update habit does not exists")
+	}
+
+	s.Habits[habit.Name] = habit
+	return nil
+}
+
+func (s MemoryStore) AllHabits() []*Habit {
+	allHabits := make([]*Habit, 0, len(s.Habits))
+	for _, h := range s.Habits {
+		allHabits = append(allHabits, h)
+	}
+	return allHabits
+}
