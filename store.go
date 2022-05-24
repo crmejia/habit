@@ -2,13 +2,14 @@ package habit
 
 import (
 	"errors"
+	"time"
 )
 
 type Habit struct {
-	Name   string
-	Streak int
-	//DueDate  time.Time
-	//Interval time.Duration
+	Name     string
+	Streak   int
+	DueDate  time.Time
+	Interval time.Duration
 	//Message  string
 }
 
