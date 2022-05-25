@@ -10,11 +10,9 @@ type Habit struct {
 	Streak   int
 	DueDate  time.Time
 	Interval time.Duration
-	//Message  string
+	Message  string
 }
 
-// the point of the store interface is to wrap data around the basic go map struct.
-//that means that for testing a memory still will do see store_test for more comments.
 type MemoryStore struct {
 	Habits map[string]*Habit
 }
@@ -29,14 +27,6 @@ func OpenStore() MemoryStore {
 	return memoryStore
 }
 
-//Get should get return a habit always? No, because that would limit the user of the package.It would mean get does
-//get+create changing the signature to Get(habit) because name is only one attribute not the whole habit and the data
-// needs to be UPDATE in that case, not created... See where this rabbit hole goes?
-//in case the get fails the function has to go ahead and do some other two behaviors(create, update)? The answer is
-//no, this is business logic, not a CRUD logic. So the user( habit manager or habit consumer, whatever other package
-//leverages this one) is free to implement to meet their needs. The user gets to decide what to do with it. If the user
-//wants to create a habit that doesn't exist(after trying a get) they can do so at their own discretion not my library
-//limiting their use case by short vision.
 func (s *MemoryStore) Get(name string) *Habit {
 	habit, ok := s.Habits[name]
 	if ok {

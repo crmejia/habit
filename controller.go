@@ -2,14 +2,15 @@ package habit
 
 import (
 	"errors"
+	"fmt"
 	"time"
 )
 
 const (
-	//NewMessage MessageKind = iota
-	//RepeatMessage
-	//StreakMessage
-	//BrokenMessage
+	NewMessage MessageKind = iota
+	RepeatMessage
+	StreakMessage
+	BrokenMessage
 
 	DailyInterval  = 24 * time.Hour
 	WeeklyInterval = 7 * 24 * time.Hour
@@ -49,6 +50,7 @@ func (c Controller) Handle(input *Habit) (*Habit, error) {
 	}
 	input.Streak = 0
 	input.DueDate = time.Now().Add(input.Interval)
+	input.GenerateMessage(NewMessage)
 	err := c.Store.Create(input)
 	if err != nil {
 		return nil, err
@@ -57,22 +59,61 @@ func (c Controller) Handle(input *Habit) (*Habit, error) {
 	return input, nil
 }
 
+func (h Habit) String() string {
+	return h.Message
+}
+
 func (h *Habit) updateHabit() {
 	if SameDay(h.DueDate, time.Now()) {
 		//increase streak
 		h.Streak++
 		h.DueDate = time.Now().Add(h.Interval)
-		//h.GenerateMessage(StreakMessage)
+		h.GenerateMessage(StreakMessage)
 	} else if SameDay(h.DueDate, time.Now().Add(h.Interval)) {
 		//repeated habit
-		//h.GenerateMessage(RepeatMessage)
+		h.GenerateMessage(RepeatMessage)
 	} else if !SameDay(h.DueDate, time.Now()) && !SameDay(h.DueDate, time.Now().Add(h.Interval)) {
 		//streak lost
-		//h.GenerateMessage(BrokenMessage)
+		h.GenerateMessage(BrokenMessage)
 		h.Streak = 0
 		h.DueDate = time.Now().Add(h.Interval)
 	}
 }
+
+//GenerateMessage creates the appropriate message for a given habit.
+func (h *Habit) GenerateMessage(kind MessageKind) {
+	var intervalString string
+	switch kind {
+	case NewMessage:
+		if h.Interval == WeeklyInterval {
+			intervalString = "in a week"
+		} else {
+			intervalString = "tomorrow"
+		}
+		h.Message = fmt.Sprintf(newHabit, h.Name, intervalString)
+	case RepeatMessage:
+		h.Message = fmt.Sprintf(repeatedHabit, h.Name)
+	case StreakMessage:
+		if h.Interval == WeeklyInterval {
+			intervalString = "weeks"
+		} else {
+			intervalString = "days"
+		}
+		h.Message = fmt.Sprintf(streakHabit, h.Name, h.Streak, intervalString)
+	case BrokenMessage:
+		sinceDuration := time.Since(h.DueDate)
+		sinceDays := sinceDuration.Hours() / 24.0
+		intervalString = "days"
+		if h.Interval == WeeklyInterval {
+			intervalString = "weeks"
+			sinceDays = (sinceDuration.Hours() / 24.0) / 7.0
+		}
+		h.Message = fmt.Sprintf(brokeStreak, h.Name, sinceDays, intervalString)
+	}
+}
+
+//MessageKind represents the message to be displayed
+type MessageKind int
 
 // SameDay returns true if the days are the same ignoring hours, minutes,etc
 func SameDay(d1, d2 time.Time) bool {

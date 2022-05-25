@@ -3,6 +3,7 @@ package habit_test
 import (
 	"habit"
 	"testing"
+	"time"
 )
 
 func TestMemoryStore_GetReturnsNilOnNoHabit(t *testing.T) {
@@ -20,27 +21,27 @@ func TestMemoryStore_GetReturnsExistingHabit(t *testing.T) {
 	store := habit.OpenStore()
 	store.Habits["piano"] = &habit.Habit{Name: "piano"}
 
-	habit := store.Get("piano")
-	if habit == nil {
+	h := store.Get("piano")
+	if h == nil {
 		t.Fatal()
 	}
 
 	want := "piano"
-	got := habit.Name
+	got := h.Name
 	if want != got {
-		t.Errorf("want habit name to be %s, habit %s", want, got)
+		t.Errorf("want h name to be %s, h %s", want, got)
 	}
 }
 
 func TestMemoryStore_CreateNewHabit(t *testing.T) {
 	t.Parallel()
 	store := habit.OpenStore()
-	habit := habit.Habit{Name: "piano"}
+	h := habit.Habit{Name: "piano"}
 
-	store.Create(&habit)
+	store.Create(&h)
 
 	if _, ok := store.Habits["piano"]; !ok {
-		t.Error("want habit to be inserted into store")
+		t.Error("want h to be inserted into store")
 	}
 }
 
@@ -57,12 +58,12 @@ func TestMemoryStore_CreateNilHabitFails(t *testing.T) {
 func TestMemoryStore_CreateExistingHabitFails(t *testing.T) {
 	t.Parallel()
 	store := habit.OpenStore()
-	habit := habit.Habit{Name: "piano"}
-	store.Habits["piano"] = &habit
-	err := store.Create(&habit)
+	h := habit.Habit{Name: "piano"}
+	store.Habits["piano"] = &h
+	err := store.Create(&h)
 
 	if err == nil {
-		t.Error("want Store.Create nil habit to fail with error")
+		t.Error("want Store.Create nil h to fail with error")
 	}
 }
 
@@ -111,5 +112,67 @@ func TestMemoryStore_AllHabitsReturnsSliceOfHabits(t *testing.T) {
 	allHabits := store.AllHabits()
 	if len(allHabits) != len(store.Habits) {
 		t.Error("want AllHabits to return a slice of habits")
+	}
+}
+
+func TestMessageGenerator(t *testing.T) {
+	testCases := []struct {
+		h    habit.Habit
+		kind habit.MessageKind
+		want string
+	}{
+		{habit.Habit{Name: "piano", Interval: habit.WeeklyInterval}, habit.NewMessage, "Good luck with your new habit 'piano'! Don't forget to do it again in a week."},
+		{habit.Habit{Name: "piano", Interval: habit.DailyInterval}, habit.NewMessage, "Good luck with your new habit 'piano'! Don't forget to do it again tomorrow."},
+		{habit.Habit{Name: "surfing", Interval: habit.WeeklyInterval}, habit.RepeatMessage, "You already logged 'surfing' today. Keep it up!"},
+		{habit.Habit{Name: "meditation", Interval: habit.DailyInterval}, habit.RepeatMessage, "You already logged 'meditation' today. Keep it up!"},
+		{habit.Habit{Name: "dancing", Interval: habit.WeeklyInterval, Streak: 2}, habit.StreakMessage, "Nice work: you've done the habit 'dancing' for 2 weeks in a row now. Keep it up!"},
+		{habit.Habit{Name: "meditation", Interval: habit.DailyInterval, Streak: 2}, habit.StreakMessage, "Nice work: you've done the habit 'meditation' for 2 days in a row now. Keep it up!"},
+		{habit.Habit{Name: "running", Interval: habit.DailyInterval, DueDate: time.Now().Add(-5 * 24 * time.Hour)}, habit.BrokenMessage, "You last did the habit 'running' 5 days ago, so you're starting a new streak today. Good luck!"},
+		{habit.Habit{Name: "hiking", Interval: habit.WeeklyInterval, DueDate: time.Now().Add(-3 * 24 * 7 * time.Hour)}, habit.BrokenMessage, "You last did the habit 'hiking' 3 weeks ago, so you're starting a new streak today. Good luck!"},
+	}
+
+	for _, tc := range testCases {
+		tc.h.GenerateMessage(tc.kind)
+		got := tc.h.Message
+		if tc.want != got {
+			t.Errorf("want Message to be:\n%s\ngot:\n%s", tc.want, got)
+		}
+	}
+}
+
+func TestController_HandleSetsMessageCorrectlyForNewHabit(t *testing.T) {
+	t.Parallel()
+	store := habit.OpenStore()
+	controller := habit.NewController(store)
+	h := &habit.Habit{Name: "piano",
+		Interval: habit.DailyInterval}
+	controller.Handle(h)
+
+	want := "Good luck with your new habit 'piano'! Don't forget to do it again tomorrow."
+	got := h.String()
+	if want != got {
+		t.Errorf("For %d day streak: want the Message to be:\n%s,\n got\n%s", h.Streak, want, got)
+	}
+}
+
+func TestTracker_FetchHabitSetsMessageCorrectlyForStreakBrokenStreak(t *testing.T) {
+	t.Parallel()
+	testCases := []struct {
+		want  string
+		habit *habit.Habit
+	}{
+		{want: "Nice work: you've done the habit 'surf' for 4 days in a row now. Keep it up!", habit: &habit.Habit{Name: "surf", Streak: 3, DueDate: time.Now()}},
+		{want: "You last did the habit 'running' 10 days ago, so you're starting a new streak today. Good luck!", habit: &habit.Habit{Name: "running", Streak: 10, DueDate: time.Now().Add(-10 * 24 * time.Hour)}},
+	}
+	store := habit.OpenStore()
+	controller := habit.NewController(store)
+	for _, tc := range testCases {
+		controller.Store.Habits[tc.habit.Name] = tc.habit
+		controller.Handle(tc.habit)
+
+		got := tc.habit.String()
+		if tc.want != got {
+			t.Errorf("For %d day streak: want the Message to be:\n%s,\n got\n%s", tc.habit.Streak, tc.want, got)
+		}
 	}
 }
