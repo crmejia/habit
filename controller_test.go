@@ -2,6 +2,7 @@ package habit_test
 
 import (
 	"habit"
+	"strings"
 	"testing"
 	"time"
 )
@@ -70,7 +71,7 @@ func TestController_HandleUpdatesStreaksDueDateCorrectly(t *testing.T) {
 		h, _ := controller.Handle(&habit.Habit{Name: "piano"})
 
 		if h.Name != "piano" {
-			t.Errorf("wantedStreak piano to be the habit's name got %s", h.Name)
+			t.Errorf("wantedStreak piano to be the habit's testName got %s", h.Name)
 		}
 		if h.Streak != tc.wantedStreak {
 			t.Errorf("%s. Want habit.Streak to be %d got %d", tc.name, tc.wantedStreak, h.Streak)
@@ -110,4 +111,54 @@ func TestController_HandleCreatesHabit(t *testing.T) {
 	}
 }
 
-//TODO message testing
+func TestController_AllHabits(t *testing.T) {
+	t.Parallel()
+	testCases := []struct {
+		store habit.MemoryStore
+		want  string
+	}{
+		{store: habit.MemoryStore{Habits: map[string]*habit.Habit{}}, want: ""},
+		{store: habit.MemoryStore{Habits: map[string]*habit.Habit{"piano": &habit.Habit{Name: "piano"}}}, want: "piano"},
+	}
+
+	for _, tc := range testCases {
+		controller := habit.NewController(tc.store)
+		got := controller.AllHabits()
+		if !strings.Contains(got, tc.want) {
+			t.Errorf("want output to contain %s, got:\n    %s", tc.want, got)
+		}
+	}
+}
+func TestParseHabitErrors(t *testing.T) {
+	t.Parallel()
+	testCases := []struct {
+		testName, habitName, frequency string
+	}{
+		{testName: "empty habit name", habitName: "", frequency: "daily"},
+		{testName: "empty frequency", habitName: "surfing", frequency: ""},
+		{testName: "unknown frequency", habitName: "surfing", frequency: "blah"},
+	}
+	for _, tc := range testCases {
+		_, err := habit.ParseHabit(tc.habitName, tc.frequency)
+		if err == nil {
+			t.Errorf("expect ParseHabit to return error on %s", tc.testName)
+		}
+	}
+}
+
+func TestParseHabit(t *testing.T) {
+	t.Parallel()
+	testCases := []struct {
+		habitName, frequency string
+		wantedFrequency      time.Duration
+	}{
+		{habitName: "piano", frequency: "daily", wantedFrequency: habit.DailyInterval},
+		{habitName: "piano", frequency: "weekly", wantedFrequency: habit.WeeklyInterval},
+	}
+	for _, tc := range testCases {
+		h, _ := habit.ParseHabit(tc.habitName, tc.frequency)
+		if h.Name != tc.habitName || h.Interval != tc.wantedFrequency {
+			t.Errorf("want habit name to be %s. Got %s\n want frequency to be %s. Got:%d", tc.habitName, h.Name, tc.frequency, h.Interval)
+		}
+	}
+}

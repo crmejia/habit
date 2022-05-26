@@ -29,7 +29,7 @@ func TestMemoryStore_GetReturnsExistingHabit(t *testing.T) {
 	want := "piano"
 	got := h.Name
 	if want != got {
-		t.Errorf("want h name to be %s, h %s", want, got)
+		t.Errorf("want h testName to be %s, h %s", want, got)
 	}
 }
 

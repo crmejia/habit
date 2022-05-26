@@ -36,7 +36,7 @@ func (c Controller) Handle(input *Habit) (*Habit, error) {
 	}
 
 	if input.Name == "" {
-		return nil, errors.New("input name cannot be empty")
+		return nil, errors.New("input testName cannot be empty")
 	}
 
 	h := c.Store.Get(input.Name)
@@ -59,6 +59,39 @@ func (c Controller) Handle(input *Habit) (*Habit, error) {
 	return input, nil
 }
 
+func (c Controller) AllHabits() string {
+	allHabits := c.Store.AllHabits()
+	if len(allHabits) == 0 {
+		return ""
+	}
+	message := "Habits:\n"
+	for _, h := range allHabits {
+		message += fmt.Sprintf(habitStatus+"\n", h.Streak, h.Name)
+	}
+	return message
+}
+
+func ParseHabit(name, frequency string) (*Habit, error) {
+	if name == "" {
+		return nil, errors.New("habit testName cannot be empty")
+	}
+
+	if frequency == "" {
+		return nil, errors.New("habit frequency cannot be empty")
+	}
+
+	h := Habit{Name: name}
+	//TODO make sure parsing 'frequency' doesn't change the frequency if it exists
+	switch frequency {
+	case "daily":
+		h.Interval = DailyInterval
+	case "weekly":
+		h.Interval = WeeklyInterval
+	default:
+		return nil, fmt.Errorf("unknown frequency: %s", frequency)
+	}
+	return &h, nil
+}
 func (h Habit) String() string {
 	return h.Message
 }
