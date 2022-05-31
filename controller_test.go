@@ -9,7 +9,7 @@ import (
 
 func TestNewController(t *testing.T) {
 	t.Parallel()
-	store := habit.OpenStore()
+	store := habit.OpenMemoryStore()
 	controller := habit.NewController(store)
 
 	if controller.Store.Habits == nil {
@@ -19,7 +19,7 @@ func TestNewController(t *testing.T) {
 
 func TestController_HandleReturnsErrorOnNilHabit(t *testing.T) {
 	t.Parallel()
-	store := habit.OpenStore()
+	store := habit.OpenMemoryStore()
 	controller := habit.NewController(store)
 	_, err := controller.Handle(nil)
 	if err == nil {
@@ -29,7 +29,7 @@ func TestController_HandleReturnsErrorOnNilHabit(t *testing.T) {
 
 func TestController_HandleReturnsErrorOnEmptyHabitName(t *testing.T) {
 	t.Parallel()
-	store := habit.OpenStore()
+	store := habit.OpenMemoryStore()
 	controller := habit.NewController(store)
 	h := habit.Habit{Name: ""}
 	_, err := controller.Handle(&h)
@@ -66,7 +66,7 @@ func TestController_HandleUpdatesStreaksDueDateCorrectly(t *testing.T) {
 	for _, tc := range testCases {
 		inputHabit.Streak = tc.streak
 		inputHabit.DueDate = tc.dueDate
-		inputHabit.Interval = tc.interval
+		inputHabit.Frequency = tc.interval
 
 		h, _ := controller.Handle(&habit.Habit{Name: "piano"})
 
@@ -85,7 +85,7 @@ func TestController_HandleUpdatesStreaksDueDateCorrectly(t *testing.T) {
 
 func TestController_HandleCreatesErrorsOnNoInterval(t *testing.T) {
 	t.Parallel()
-	store := habit.OpenStore()
+	store := habit.OpenMemoryStore()
 	controller := habit.NewController(store)
 
 	newHabit := habit.Habit{Name: "piano"}
@@ -97,10 +97,10 @@ func TestController_HandleCreatesErrorsOnNoInterval(t *testing.T) {
 
 func TestController_HandleCreatesHabit(t *testing.T) {
 	t.Parallel()
-	store := habit.OpenStore()
+	store := habit.OpenMemoryStore()
 	controller := habit.NewController(store)
 
-	newHabit := habit.Habit{Name: "piano", Interval: habit.DailyInterval}
+	newHabit := habit.Habit{Name: "piano", Frequency: habit.DailyInterval}
 	_, err := controller.Handle(&newHabit)
 	if err != nil {
 		t.Errorf("expected handle to return no errors, got: %s", err)
@@ -157,8 +157,8 @@ func TestParseHabit(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		h, _ := habit.ParseHabit(tc.habitName, tc.frequency)
-		if h.Name != tc.habitName || h.Interval != tc.wantedFrequency {
-			t.Errorf("want habit name to be %s. Got %s\n want frequency to be %s. Got:%d", tc.habitName, h.Name, tc.frequency, h.Interval)
+		if h.Name != tc.habitName || h.Frequency != tc.wantedFrequency {
+			t.Errorf("want habit name to be %s. Got %s\n want frequency to be %s. Got:%d", tc.habitName, h.Name, tc.frequency, h.Frequency)
 		}
 	}
 }

@@ -1,16 +1,25 @@
 package habit
 
 import (
+	"database/sql"
 	"errors"
+	_ "github.com/mattn/go-sqlite3"
 	"time"
 )
 
 type Habit struct {
-	Name     string
-	Streak   int
-	DueDate  time.Time
-	Interval time.Duration
-	Message  string
+	Name      string
+	Streak    int
+	DueDate   time.Time
+	Frequency time.Duration
+	Message   string
+}
+
+type Store interface {
+	Get(name string) *Habit //todo add error
+	Create(habit *Habit) error
+	Update(habit *Habit) error
+	AllHabits() []*Habit
 }
 
 type MemoryStore struct {
@@ -19,7 +28,7 @@ type MemoryStore struct {
 
 var NilHabitError = errors.New("habit cannot be nil")
 
-func OpenStore() MemoryStore {
+func OpenMemoryStore() MemoryStore {
 	//here a file store or a db store would get the data from persistence.
 	memoryStore := MemoryStore{
 		Habits: map[string]*Habit{},
@@ -27,12 +36,12 @@ func OpenStore() MemoryStore {
 	return memoryStore
 }
 
-func (s *MemoryStore) Get(name string) *Habit {
+func (s *MemoryStore) Get(name string) (*Habit, error) {
 	habit, ok := s.Habits[name]
 	if ok {
-		return habit
+		return habit, nil
 	}
-	return nil
+	return nil, nil
 }
 
 func (s *MemoryStore) Create(habit *Habit) error {
@@ -66,4 +75,109 @@ func (s MemoryStore) AllHabits() []*Habit {
 		allHabits = append(allHabits, h)
 	}
 	return allHabits
+}
+
+//DBStore represents a store backed by a SQLite DB
+type DBStore struct {
+	db *sql.DB
+}
+
+//OpenDBStore opens a DBStore
+func OpenDBStore(dbSource string) (DBStore, error) {
+	db, err := sql.Open("sqlite3", dbSource)
+	if err != nil {
+		return DBStore{}, err
+	}
+
+	const createTable = `
+CREATE TABLE IF NOT EXISTS habit(
+id INTEGER NOT NULL PRIMARY KEY,
+name VARCHAR UNIQUE NOT NULL,
+streak INTEGER NOT NULL,
+frequency INTEGER NOT NULL,
+duedate TEXT NOT NULL );`
+	_, err = db.Exec(createTable, nil)
+
+	if err != nil {
+		return DBStore{}, err
+	}
+
+	return DBStore{db: db}, nil
+}
+
+func (s *DBStore) Get(name string) (*Habit, error) {
+	const getHabit = `
+SELECT name, streak, frequency, duedate FROM habit WHERE name = ?
+`
+	rows, err := s.db.Query(getHabit, name)
+	if err != nil {
+		return nil, err
+	}
+	h := Habit{}
+
+	for rows.Next() {
+		var (
+			hname         string
+			streak        int
+			frequency     int64
+			duedateString string
+		)
+		err = rows.Scan(&hname, &streak, &frequency, &duedateString)
+		if err != nil {
+			return nil, err
+		}
+		h.Name = hname
+		h.Streak = streak
+		h.Frequency = time.Duration(frequency)
+		dueDate, err := time.Parse("2006-01-02 15:04:05-07:00", duedateString)
+		if err != nil {
+			return nil, err
+		}
+		h.DueDate = dueDate
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	if h.Name == "" {
+		return nil, nil
+	}
+	return &h, nil
+}
+
+func (s *DBStore) Create(h *Habit) error {
+	if h == nil {
+		return NilHabitError
+	}
+	const insertHabit = `
+INSERT INTO habit(name,streak,frequency,duedate) VALUES(?,?,?,?)
+`
+	stmt, err := s.db.Prepare(insertHabit)
+	if err != nil {
+		return err
+	}
+	_, err = stmt.Exec(h.Name, h.Streak, int64(h.Frequency), h.DueDate)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *DBStore) Update(h *Habit) error {
+	if h == nil {
+		return NilHabitError
+	}
+	const updateHabit = `
+UPDATE habit SET streak = ?, frequency = ?, duedate = ? WHERE NAME = ?
+`
+	stmt, err := s.db.Prepare(updateHabit)
+	if err != nil {
+		return err
+	}
+	_, err = stmt.Exec(h.Streak, int64(h.Frequency), h.DueDate, h.Name)
+	if err != nil {
+		return err
+	}
+	return nil
 }

@@ -8,8 +8,8 @@ import (
 
 func TestMemoryStore_GetReturnsNilOnNoHabit(t *testing.T) {
 	t.Parallel()
-	store := habit.OpenStore()
-	got := store.Get("piano")
+	store := habit.OpenMemoryStore()
+	got, _ := store.Get("piano")
 
 	if got != nil {
 		t.Error("want Store.Get to return nil")
@@ -18,10 +18,10 @@ func TestMemoryStore_GetReturnsNilOnNoHabit(t *testing.T) {
 
 func TestMemoryStore_GetReturnsExistingHabit(t *testing.T) {
 	t.Parallel()
-	store := habit.OpenStore()
+	store := habit.OpenMemoryStore()
 	store.Habits["piano"] = &habit.Habit{Name: "piano"}
 
-	h := store.Get("piano")
+	h, _ := store.Get("piano")
 	if h == nil {
 		t.Fatal()
 	}
@@ -35,7 +35,7 @@ func TestMemoryStore_GetReturnsExistingHabit(t *testing.T) {
 
 func TestMemoryStore_CreateNewHabit(t *testing.T) {
 	t.Parallel()
-	store := habit.OpenStore()
+	store := habit.OpenMemoryStore()
 	h := habit.Habit{Name: "piano"}
 
 	store.Create(&h)
@@ -47,7 +47,7 @@ func TestMemoryStore_CreateNewHabit(t *testing.T) {
 
 func TestMemoryStore_CreateNilHabitFails(t *testing.T) {
 	t.Parallel()
-	store := habit.OpenStore()
+	store := habit.OpenMemoryStore()
 	err := store.Create(nil)
 
 	if err == nil {
@@ -57,7 +57,7 @@ func TestMemoryStore_CreateNilHabitFails(t *testing.T) {
 
 func TestMemoryStore_CreateExistingHabitFails(t *testing.T) {
 	t.Parallel()
-	store := habit.OpenStore()
+	store := habit.OpenMemoryStore()
 	h := habit.Habit{Name: "piano"}
 	store.Habits["piano"] = &h
 	err := store.Create(&h)
@@ -69,7 +69,7 @@ func TestMemoryStore_CreateExistingHabitFails(t *testing.T) {
 
 func TestMemoryStore_UpdateHabit(t *testing.T) {
 	t.Parallel()
-	store := habit.OpenStore()
+	store := habit.OpenMemoryStore()
 	oldHabit := &habit.Habit{Name: "piano"}
 	store.Habits["piano"] = oldHabit
 
@@ -83,7 +83,7 @@ func TestMemoryStore_UpdateHabit(t *testing.T) {
 
 func TestMemoryStore_UpdateFailsOnNil(t *testing.T) {
 	t.Parallel()
-	store := habit.OpenStore()
+	store := habit.OpenMemoryStore()
 	err := store.Update(nil)
 
 	if err == nil {
@@ -93,7 +93,7 @@ func TestMemoryStore_UpdateFailsOnNil(t *testing.T) {
 
 func TestMemoryStore_UpdateFailsOnNonExistingHabit(t *testing.T) {
 	t.Parallel()
-	store := habit.OpenStore()
+	store := habit.OpenMemoryStore()
 	err := store.Update(&habit.Habit{Name: "piano"})
 
 	if err == nil {
@@ -103,7 +103,7 @@ func TestMemoryStore_UpdateFailsOnNonExistingHabit(t *testing.T) {
 
 func TestMemoryStore_AllHabitsReturnsSliceOfHabits(t *testing.T) {
 	t.Parallel()
-	store := habit.OpenStore()
+	store := habit.OpenMemoryStore()
 	store.Habits = map[string]*habit.Habit{
 		"piano":   &habit.Habit{Name: "piano"},
 		"surfing": &habit.Habit{Name: "surfing"},
@@ -121,14 +121,14 @@ func TestMessageGenerator(t *testing.T) {
 		kind habit.MessageKind
 		want string
 	}{
-		{habit.Habit{Name: "piano", Interval: habit.WeeklyInterval}, habit.NewMessage, "Good luck with your new habit 'piano'! Don't forget to do it again in a week."},
-		{habit.Habit{Name: "piano", Interval: habit.DailyInterval}, habit.NewMessage, "Good luck with your new habit 'piano'! Don't forget to do it again tomorrow."},
-		{habit.Habit{Name: "surfing", Interval: habit.WeeklyInterval}, habit.RepeatMessage, "You already logged 'surfing' today. Keep it up!"},
-		{habit.Habit{Name: "meditation", Interval: habit.DailyInterval}, habit.RepeatMessage, "You already logged 'meditation' today. Keep it up!"},
-		{habit.Habit{Name: "dancing", Interval: habit.WeeklyInterval, Streak: 2}, habit.StreakMessage, "Nice work: you've done the habit 'dancing' for 2 weeks in a row now. Keep it up!"},
-		{habit.Habit{Name: "meditation", Interval: habit.DailyInterval, Streak: 2}, habit.StreakMessage, "Nice work: you've done the habit 'meditation' for 2 days in a row now. Keep it up!"},
-		{habit.Habit{Name: "running", Interval: habit.DailyInterval, DueDate: time.Now().Add(-5 * 24 * time.Hour)}, habit.BrokenMessage, "You last did the habit 'running' 5 days ago, so you're starting a new streak today. Good luck!"},
-		{habit.Habit{Name: "hiking", Interval: habit.WeeklyInterval, DueDate: time.Now().Add(-3 * 24 * 7 * time.Hour)}, habit.BrokenMessage, "You last did the habit 'hiking' 3 weeks ago, so you're starting a new streak today. Good luck!"},
+		{habit.Habit{Name: "piano", Frequency: habit.WeeklyInterval}, habit.NewMessage, "Good luck with your new habit 'piano'! Don't forget to do it again in a week."},
+		{habit.Habit{Name: "piano", Frequency: habit.DailyInterval}, habit.NewMessage, "Good luck with your new habit 'piano'! Don't forget to do it again tomorrow."},
+		{habit.Habit{Name: "surfing", Frequency: habit.WeeklyInterval}, habit.RepeatMessage, "You already logged 'surfing' today. Keep it up!"},
+		{habit.Habit{Name: "meditation", Frequency: habit.DailyInterval}, habit.RepeatMessage, "You already logged 'meditation' today. Keep it up!"},
+		{habit.Habit{Name: "dancing", Frequency: habit.WeeklyInterval, Streak: 2}, habit.StreakMessage, "Nice work: you've done the habit 'dancing' for 2 weeks in a row now. Keep it up!"},
+		{habit.Habit{Name: "meditation", Frequency: habit.DailyInterval, Streak: 2}, habit.StreakMessage, "Nice work: you've done the habit 'meditation' for 2 days in a row now. Keep it up!"},
+		{habit.Habit{Name: "running", Frequency: habit.DailyInterval, DueDate: time.Now().Add(-5 * 24 * time.Hour)}, habit.BrokenMessage, "You last did the habit 'running' 5 days ago, so you're starting a new streak today. Good luck!"},
+		{habit.Habit{Name: "hiking", Frequency: habit.WeeklyInterval, DueDate: time.Now().Add(-3 * 24 * 7 * time.Hour)}, habit.BrokenMessage, "You last did the habit 'hiking' 3 weeks ago, so you're starting a new streak today. Good luck!"},
 	}
 
 	for _, tc := range testCases {
@@ -142,10 +142,10 @@ func TestMessageGenerator(t *testing.T) {
 
 func TestController_HandleSetsMessageCorrectlyForNewHabit(t *testing.T) {
 	t.Parallel()
-	store := habit.OpenStore()
+	store := habit.OpenMemoryStore()
 	controller := habit.NewController(store)
 	h := &habit.Habit{Name: "piano",
-		Interval: habit.DailyInterval}
+		Frequency: habit.DailyInterval}
 	controller.Handle(h)
 
 	want := "Good luck with your new habit 'piano'! Don't forget to do it again tomorrow."
@@ -164,7 +164,7 @@ func TestTracker_FetchHabitSetsMessageCorrectlyForStreakBrokenStreak(t *testing.
 		{want: "Nice work: you've done the habit 'surf' for 4 days in a row now. Keep it up!", habit: &habit.Habit{Name: "surf", Streak: 3, DueDate: time.Now()}},
 		{want: "You last did the habit 'running' 10 days ago, so you're starting a new streak today. Good luck!", habit: &habit.Habit{Name: "running", Streak: 10, DueDate: time.Now().Add(-10 * 24 * time.Hour)}},
 	}
-	store := habit.OpenStore()
+	store := habit.OpenMemoryStore()
 	controller := habit.NewController(store)
 	for _, tc := range testCases {
 		controller.Store.Habits[tc.habit.Name] = tc.habit
@@ -174,5 +174,89 @@ func TestTracker_FetchHabitSetsMessageCorrectlyForStreakBrokenStreak(t *testing.
 		if tc.want != got {
 			t.Errorf("For %d day streak: want the Message to be:\n%s,\n got\n%s", tc.habit.Streak, tc.want, got)
 		}
+	}
+}
+
+func TestOpenDBStoreErrorsOnEmptyDBSource(t *testing.T) {
+	t.Parallel()
+	t.Skip()
+	_, err := habit.OpenDBStore("")
+	if err == nil {
+		t.Error("Want error on empty string db source")
+	}
+}
+
+func TestDBStore_GetCreateRoundTrip(t *testing.T) {
+	t.Parallel()
+	dbSource := t.TempDir() + "test.db"
+	dbStore, err := habit.OpenDBStore(dbSource)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	h, err := dbStore.Get("piano")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if h != nil {
+		t.Error("expected get to return nil on empty db")
+	}
+	h = &habit.Habit{
+		Name: "piano",
+	}
+	err = dbStore.Create(h)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	got, err := dbStore.Get("piano")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got == nil {
+		t.Error("wanted habit piano. Got nil.")
+	}
+}
+
+func TestDBStore_CreateUpdateRoundTrip(t *testing.T) {
+	t.Parallel()
+	dbSource := t.TempDir() + "test.db"
+	dbStore, err := habit.OpenDBStore(dbSource)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	h := &habit.Habit{
+		Name: "piano",
+	}
+	err = dbStore.Create(h)
+	if err != nil {
+		t.Fatal()
+	}
+
+	intermediateHabit, err := dbStore.Get("piano")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if intermediateHabit == nil {
+		t.Error("wanted habit piano. Got nil.")
+	}
+
+	intermediateHabit.Streak = 5
+	intermediateHabit.Frequency = habit.DailyInterval
+	now := time.Now().Truncate(time.Second)
+	intermediateHabit.DueDate = now
+
+	err = dbStore.Update(intermediateHabit)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, err := dbStore.Get("piano")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Streak != 5 || got.Frequency != habit.DailyInterval || !habit.SameDay(got.DueDate, now) {
+		t.Error("wanted habit piano. To be updated.")
 	}
 }

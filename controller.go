@@ -39,19 +39,22 @@ func (c Controller) Handle(input *Habit) (*Habit, error) {
 		return nil, errors.New("input testName cannot be empty")
 	}
 
-	h := c.Store.Get(input.Name)
+	h, err := c.Store.Get(input.Name)
+	if err != nil {
+		return nil, err
+	}
 	if h != nil {
 		h.updateHabit()
 		return h, nil
 	}
 
-	if !validInterval[input.Interval] {
+	if !validInterval[input.Frequency] {
 		return nil, errors.New("invalid interval")
 	}
 	input.Streak = 0
-	input.DueDate = time.Now().Add(input.Interval)
+	input.DueDate = time.Now().Add(input.Frequency)
 	input.GenerateMessage(NewMessage)
-	err := c.Store.Create(input)
+	err = c.Store.Create(input)
 	if err != nil {
 		return nil, err
 	}
@@ -81,12 +84,12 @@ func ParseHabit(name, frequency string) (*Habit, error) {
 	}
 
 	h := Habit{Name: name}
-	//TODO make sure parsing 'frequency' doesn't change the frequency if it exists
+	//TODO make sure parsing 'frequency' doesn't overwrite the frequency if it exists
 	switch frequency {
 	case "daily":
-		h.Interval = DailyInterval
+		h.Frequency = DailyInterval
 	case "weekly":
-		h.Interval = WeeklyInterval
+		h.Frequency = WeeklyInterval
 	default:
 		return nil, fmt.Errorf("unknown frequency: %s", frequency)
 	}
@@ -100,16 +103,16 @@ func (h *Habit) updateHabit() {
 	if SameDay(h.DueDate, time.Now()) {
 		//increase streak
 		h.Streak++
-		h.DueDate = time.Now().Add(h.Interval)
+		h.DueDate = time.Now().Add(h.Frequency)
 		h.GenerateMessage(StreakMessage)
-	} else if SameDay(h.DueDate, time.Now().Add(h.Interval)) {
+	} else if SameDay(h.DueDate, time.Now().Add(h.Frequency)) {
 		//repeated habit
 		h.GenerateMessage(RepeatMessage)
-	} else if !SameDay(h.DueDate, time.Now()) && !SameDay(h.DueDate, time.Now().Add(h.Interval)) {
+	} else if !SameDay(h.DueDate, time.Now()) && !SameDay(h.DueDate, time.Now().Add(h.Frequency)) {
 		//streak lost
 		h.GenerateMessage(BrokenMessage)
 		h.Streak = 0
-		h.DueDate = time.Now().Add(h.Interval)
+		h.DueDate = time.Now().Add(h.Frequency)
 	}
 }
 
@@ -118,7 +121,7 @@ func (h *Habit) GenerateMessage(kind MessageKind) {
 	var intervalString string
 	switch kind {
 	case NewMessage:
-		if h.Interval == WeeklyInterval {
+		if h.Frequency == WeeklyInterval {
 			intervalString = "in a week"
 		} else {
 			intervalString = "tomorrow"
@@ -127,7 +130,7 @@ func (h *Habit) GenerateMessage(kind MessageKind) {
 	case RepeatMessage:
 		h.Message = fmt.Sprintf(repeatedHabit, h.Name)
 	case StreakMessage:
-		if h.Interval == WeeklyInterval {
+		if h.Frequency == WeeklyInterval {
 			intervalString = "weeks"
 		} else {
 			intervalString = "days"
@@ -137,7 +140,7 @@ func (h *Habit) GenerateMessage(kind MessageKind) {
 		sinceDuration := time.Since(h.DueDate)
 		sinceDays := sinceDuration.Hours() / 24.0
 		intervalString = "days"
-		if h.Interval == WeeklyInterval {
+		if h.Frequency == WeeklyInterval {
 			intervalString = "weeks"
 			sinceDays = (sinceDuration.Hours() / 24.0) / 7.0
 		}

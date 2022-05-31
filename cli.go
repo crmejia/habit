@@ -32,7 +32,7 @@ func RunCLI(args []string, output io.Writer) error {
 		return nil
 	}
 
-	store := OpenStore()
+	store := OpenMemoryStore()
 	controller := NewController(store)
 	if len(args) == 0 {
 		allHabits := controller.AllHabits()
