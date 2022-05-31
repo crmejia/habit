@@ -23,10 +23,10 @@ const (
 )
 
 type Controller struct {
-	Store MemoryStore
+	Store Store
 }
 
-func NewController(store MemoryStore) Controller {
+func NewController(store Store) Controller {
 	return Controller{Store: store}
 }
 

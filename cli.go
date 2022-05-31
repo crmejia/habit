@@ -14,7 +14,7 @@ habit  -- to list all habits`
 )
 
 //RunCLI parses arguments and runs habit tracker
-func RunCLI(args []string, output io.Writer) error {
+func RunCLI(args []string, output io.Writer, store Store) error {
 	flagSet := flag.NewFlagSet("habit", flag.ContinueOnError)
 	flagSet.SetOutput(output)
 
@@ -32,7 +32,6 @@ func RunCLI(args []string, output io.Writer) error {
 		return nil
 	}
 
-	store := OpenMemoryStore()
 	controller := NewController(store)
 	if len(args) == 0 {
 		allHabits := controller.AllHabits()

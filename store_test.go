@@ -143,7 +143,7 @@ func TestMessageGenerator(t *testing.T) {
 func TestController_HandleSetsMessageCorrectlyForNewHabit(t *testing.T) {
 	t.Parallel()
 	store := habit.OpenMemoryStore()
-	controller := habit.NewController(store)
+	controller := habit.NewController(&store)
 	h := &habit.Habit{Name: "piano",
 		Frequency: habit.DailyInterval}
 	controller.Handle(h)
@@ -165,9 +165,10 @@ func TestTracker_FetchHabitSetsMessageCorrectlyForStreakBrokenStreak(t *testing.
 		{want: "You last did the habit 'running' 10 days ago, so you're starting a new streak today. Good luck!", habit: &habit.Habit{Name: "running", Streak: 10, DueDate: time.Now().Add(-10 * 24 * time.Hour)}},
 	}
 	store := habit.OpenMemoryStore()
-	controller := habit.NewController(store)
+	controller := habit.NewController(&store)
 	for _, tc := range testCases {
-		controller.Store.Habits[tc.habit.Name] = tc.habit
+
+		store.Habits[tc.habit.Name] = tc.habit
 		controller.Handle(tc.habit)
 
 		got := tc.habit.String()
@@ -258,5 +259,27 @@ func TestDBStore_CreateUpdateRoundTrip(t *testing.T) {
 	}
 	if got.Streak != 5 || got.Frequency != habit.DailyInterval || !habit.SameDay(got.DueDate, now) {
 		t.Error("wanted habit piano. To be updated.")
+	}
+}
+
+func TestDBStore_AllHabits(t *testing.T) {
+	t.Parallel()
+	dbSource := t.TempDir() + "test.db"
+	dbStore, err := habit.OpenDBStore(dbSource)
+	if err != nil {
+		t.Fatal(err)
+	}
+	habits := []*habit.Habit{
+		&habit.Habit{Name: "piano"},
+		&habit.Habit{Name: "surfing"},
+	}
+
+	for _, h := range habits {
+		dbStore.Create(h)
+	}
+
+	got := dbStore.AllHabits()
+	if len(got) != len(habits) {
+		t.Errorf("want AllHabits to return %d habits, got %d", len(habits), len(got))
 	}
 }

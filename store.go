@@ -16,7 +16,7 @@ type Habit struct {
 }
 
 type Store interface {
-	Get(name string) *Habit //todo add error
+	Get(name string) (*Habit, error)
 	Create(habit *Habit) error
 	Update(habit *Habit) error
 	AllHabits() []*Habit
@@ -180,4 +180,44 @@ UPDATE habit SET streak = ?, frequency = ?, duedate = ? WHERE NAME = ?
 		return err
 	}
 	return nil
+}
+func (s *DBStore) AllHabits() []*Habit {
+
+	const getAllHabits = `
+SELECT name, streak, frequency, duedate FROM habit
+`
+	rows, err := s.db.Query(getAllHabits)
+	if err != nil {
+		return nil
+	}
+	habits := make([]*Habit, 0)
+
+	for rows.Next() {
+		var (
+			hname         string
+			streak        int
+			frequency     int64
+			duedateString string
+		)
+		err = rows.Scan(&hname, &streak, &frequency, &duedateString)
+		if err != nil {
+			return nil
+		}
+		dueDate, err := time.Parse("2006-01-02 15:04:05-07:00", duedateString)
+		if err != nil {
+			return nil
+		}
+		h := Habit{
+			Name:      hname,
+			Streak:    streak,
+			Frequency: time.Duration(frequency),
+			DueDate:   dueDate,
+		}
+		habits = append(habits, &h)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil
+	}
+	return habits
 }

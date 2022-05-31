@@ -16,7 +16,8 @@ const (
 func TestNoArgsShowsUsageHelpOnNoHabits(t *testing.T) {
 	t.Parallel()
 	buffer := bytes.Buffer{}
-	habit.RunCLI([]string{}, &buffer)
+	store := habit.OpenMemoryStore()
+	habit.RunCLI([]string{}, &buffer, &store)
 
 	got := buffer.String()
 	if !strings.Contains(got, "Usage") {
@@ -26,10 +27,12 @@ func TestNoArgsShowsUsageHelpOnNoHabits(t *testing.T) {
 
 func TestNoArgsShowsAllHabitsWithExistingHabits(t *testing.T) {
 	t.Parallel()
-	t.Skip()
 	buffer := bytes.Buffer{}
-
-	habit.RunCLI([]string{}, &buffer)
+	store := habit.OpenMemoryStore()
+	store.Habits = map[string]*habit.Habit{
+		"piano": &habit.Habit{Name: "piano"},
+	}
+	habit.RunCLI([]string{}, &buffer, &store)
 
 	want := "Habits:"
 	got := buffer.String()
@@ -43,7 +46,7 @@ func TestMoreThanOneArgShowsUsageHelp(t *testing.T) {
 	t.Parallel()
 	args := []string{"blah", "blah"}
 	buffer := bytes.Buffer{}
-	habit.RunCLI(args, &buffer)
+	habit.RunCLI(args, &buffer, nil)
 
 	want := "Usage"
 	got := buffer.String()
@@ -59,7 +62,7 @@ func TestOptionsButNoArgsShowsUsageHelp(t *testing.T) {
 	buffer := bytes.Buffer{}
 
 	want := "Usage"
-	habit.RunCLI(args, &buffer)
+	habit.RunCLI(args, &buffer, nil)
 	got := buffer.String()
 
 	if !strings.Contains(got, want) {
@@ -79,7 +82,8 @@ func TestNewHabitShowNewHabitMessage(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		habit.RunCLI(tc.args, &buffer)
+		store := habit.OpenMemoryStore()
+		habit.RunCLI(tc.args, &buffer, &store)
 		got := buffer.String()
 		if !strings.Contains(got, tc.want) {
 			t.Errorf("new habit should print streak message. Got:\n  %s", got)
@@ -92,7 +96,7 @@ func TestNewHabitInvalidFrequencyReturnsError(t *testing.T) {
 	t.Parallel()
 	args := []string{"-f", "yellow", "piano"}
 	buffer := bytes.Buffer{}
-	err := habit.RunCLI(args, &buffer)
+	err := habit.RunCLI(args, &buffer, nil)
 
 	if err == nil {
 		t.Errorf("invalid frequency should return error. Got nil")
