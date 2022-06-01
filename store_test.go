@@ -46,13 +46,18 @@ func TestMemoryStore_CreateNewHabit(t *testing.T) {
 	}
 }
 
-func TestMemoryStore_CreateNilHabitFails(t *testing.T) {
+func TestMemoryStore_CreateUpdateNilHabitFails(t *testing.T) {
 	t.Parallel()
 	store := habit.OpenMemoryStore()
 	err := store.Create(nil)
 
 	if err == nil {
 		t.Error("want Store.create nil habit to fail with error")
+	}
+
+	err = store.Update(nil)
+	if err == nil {
+		t.Error("want Store.Update nil habit to fail with error")
 	}
 }
 
@@ -181,10 +186,26 @@ func TestTracker_FetchHabitSetsMessageCorrectlyForStreakBrokenStreak(t *testing.
 
 func TestOpenDBStoreErrorsOnEmptyDBSource(t *testing.T) {
 	t.Parallel()
-	t.Skip()
 	_, err := habit.OpenDBStore("")
 	if err == nil {
 		t.Error("Want error on empty string db source")
+	}
+}
+
+func TestDBStore_CreateUpdateNilHabitFails(t *testing.T) {
+	t.Parallel()
+	dbSource := t.TempDir() + "test.db"
+	store, err := habit.OpenDBStore(dbSource)
+
+	err = store.Create(nil)
+
+	if err == nil {
+		t.Error("want Store.create nil habit to fail with error")
+	}
+
+	err = store.Update(nil)
+	if err == nil {
+		t.Error("want Store.Update nil habit to fail with error")
 	}
 }
 
@@ -295,6 +316,28 @@ func TestOpenFileStoreCreatesFile(t *testing.T) {
 	_, err = os.Stat(filename)
 	if err != nil {
 		t.Error("wanted file to be created by OpenFileStore")
+	}
+}
+
+func TestOpenFileStoreErrorsOnEmptyFilename(t *testing.T) {
+	t.Parallel()
+	_, err := habit.OpenFileStore("")
+	if err == nil {
+		t.Error("Want error on empty string db source")
+	}
+}
+func TestFileStore_CreateUpdateNilHabitFails(t *testing.T) {
+	t.Parallel()
+	filename := t.TempDir() + ".habitTracker"
+	store, err := habit.OpenFileStore(filename)
+	err = store.Create(nil)
+	if err == nil {
+		t.Error("want Store.create nil habit to fail with error")
+	}
+
+	err = store.Update(nil)
+	if err == nil {
+		t.Error("want Store.Update nil habit to fail with error")
 	}
 }
 

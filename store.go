@@ -87,6 +87,9 @@ type DBStore struct {
 
 //OpenDBStore opens a DBStore
 func OpenDBStore(dbSource string) (DBStore, error) {
+	if dbSource == "" {
+		return DBStore{}, errors.New("empty dbSource string")
+	}
 	db, err := sql.Open("sqlite3", dbSource)
 	if err != nil {
 		return DBStore{}, err
