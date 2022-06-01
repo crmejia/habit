@@ -84,7 +84,6 @@ func ParseHabit(name, frequency string) (*Habit, error) {
 	}
 
 	h := Habit{Name: name}
-	//TODO make sure parsing 'frequency' doesn't overwrite the frequency if it exists
 	switch frequency {
 	case "daily":
 		h.Frequency = DailyInterval

@@ -64,7 +64,6 @@ func TestOptionsButNoArgsShowsUsageHelp(t *testing.T) {
 	want := "Usage"
 	habit.RunCLI(args, &buffer, nil)
 	got := buffer.String()
-
 	if !strings.Contains(got, want) {
 		t.Errorf("only options and no arguments should print usage Message got: %s", got)
 	}
@@ -92,13 +91,34 @@ func TestNewHabitShowNewHabitMessage(t *testing.T) {
 	}
 }
 
-func TestNewHabitInvalidFrequencyReturnsError(t *testing.T) {
+func TestNewHabitInvalidFrequencyShowsErrorUsageHelp(t *testing.T) {
 	t.Parallel()
 	args := []string{"-f", "yellow", "piano"}
 	buffer := bytes.Buffer{}
-	err := habit.RunCLI(args, &buffer, nil)
+	habit.RunCLI(args, &buffer, nil)
 
-	if err == nil {
-		t.Errorf("invalid frequency should return error. Got nil")
+	got := buffer.String()
+
+	if !strings.Contains(got, "unknown frequency:") {
+		t.Errorf("Invalid frecuency should print error message got: %s", got)
+	}
+	if !strings.Contains(got, "Usage") {
+		t.Errorf("Invalid frecuency should print usage Message got: %s", got)
+	}
+}
+
+func TestEmptyFrequencyShowsUsageHelp(t *testing.T) {
+	t.Parallel()
+	args := []string{"-f", "", "piano"}
+	buffer := bytes.Buffer{}
+	habit.RunCLI(args, &buffer, nil)
+
+	got := buffer.String()
+
+	if !strings.Contains(got, "habit frequency cannot be empty") {
+		t.Errorf("Empty frecuency should print error message got: %s", got)
+	}
+	if !strings.Contains(got, "Usage") {
+		t.Errorf("Empty frecuency should print usage Message got: %s", got)
 	}
 }

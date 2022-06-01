@@ -2,6 +2,7 @@ package habit_test
 
 import (
 	"habit"
+	"os"
 	"testing"
 	"time"
 )
@@ -279,6 +280,133 @@ func TestDBStore_AllHabits(t *testing.T) {
 	}
 
 	got := dbStore.AllHabits()
+	if len(got) != len(habits) {
+		t.Errorf("want AllHabits to return %d habits, got %d", len(habits), len(got))
+	}
+}
+
+func TestOpenFileStoreCreatesFile(t *testing.T) {
+	t.Parallel()
+	filename := t.TempDir() + ".habitTracker"
+	_, err := habit.OpenFileStore(filename)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = os.Stat(filename)
+	if err != nil {
+		t.Error("wanted file to be created by OpenFileStore")
+	}
+}
+
+func TestFileStore_GetReturnsNilOnNoHabit(t *testing.T) {
+	t.Parallel()
+	filename := t.TempDir() + ".habitTracker"
+	fileStore, err := habit.OpenFileStore(filename)
+	if err != nil {
+		t.Fatal(err)
+	}
+	h, err := fileStore.Get("piano")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if h != nil {
+		t.Error("want Store.Get to return nil")
+	}
+}
+
+func TestFileStore_GetCreateRoundTrip(t *testing.T) {
+	t.Parallel()
+	filename := t.TempDir() + ".habitTracker"
+	fileStore, err := habit.OpenFileStore(filename)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	h, err := fileStore.Get("piano")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if h != nil {
+		t.Error("expected get to return nil on empty db")
+	}
+	h = &habit.Habit{
+		Name: "piano",
+	}
+	err = fileStore.Create(h)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	got, err := fileStore.Get("piano")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got == nil {
+		t.Error("wanted habit piano. Got nil.")
+	}
+}
+
+func TestFileStore_CreateUpdateRoundTrip(t *testing.T) {
+	t.Parallel()
+	filename := t.TempDir() + ".habitTracker"
+	fileStore, err := habit.OpenFileStore(filename)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	h := &habit.Habit{
+		Name: "piano",
+	}
+	err = fileStore.Create(h)
+	if err != nil {
+		t.Fatal()
+	}
+
+	intermediateHabit, err := fileStore.Get("piano")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if intermediateHabit == nil {
+		t.Error("wanted habit piano. Got nil.")
+	}
+
+	intermediateHabit.Streak = 5
+	intermediateHabit.Frequency = habit.DailyInterval
+	now := time.Now().Truncate(time.Second)
+	intermediateHabit.DueDate = now
+
+	err = fileStore.Update(intermediateHabit)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, err := fileStore.Get("piano")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Streak != 5 || got.Frequency != habit.DailyInterval || !habit.SameDay(got.DueDate, now) {
+		t.Error("wanted habit piano. To be updated.")
+	}
+}
+
+func TestFileStore_AllHabitsReturnsSliceOfHabits(t *testing.T) {
+	t.Parallel()
+	filename := t.TempDir() + ".habitTracker"
+	fileStore, err := habit.OpenFileStore(filename)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	habits := []*habit.Habit{
+		&habit.Habit{Name: "piano"},
+		&habit.Habit{Name: "surfing"},
+	}
+
+	for _, h := range habits {
+		fileStore.Create(h)
+	}
+
+	got := fileStore.AllHabits()
 	if len(got) != len(habits) {
 		t.Errorf("want AllHabits to return %d habits, got %d", len(habits), len(got))
 	}

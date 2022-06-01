@@ -43,9 +43,7 @@ func RunCLI(args []string, output io.Writer, store Store) error {
 		fmt.Fprintln(output, allHabits)
 		return nil
 	}
-
 	if len(flagSet.Args()) == 0 {
-		// no habit specified
 		fmt.Fprintln(output, helpIntro)
 		flagSet.Usage()
 		return nil
@@ -53,7 +51,10 @@ func RunCLI(args []string, output io.Writer, store Store) error {
 
 	h, err := ParseHabit(flagSet.Args()[0], *frequency)
 	if err != nil {
-		return err
+		fmt.Fprintln(output, err)
+		fmt.Fprintln(output, helpIntro)
+		flagSet.Usage()
+		return nil
 	}
 
 	h, err = controller.Handle(h)

@@ -2,8 +2,11 @@ package habit
 
 import (
 	"database/sql"
+	"encoding/json"
 	"errors"
 	_ "github.com/mattn/go-sqlite3"
+	"io/ioutil"
+	"os"
 	"time"
 )
 
@@ -220,4 +223,100 @@ SELECT name, streak, frequency, duedate FROM habit
 		return nil
 	}
 	return habits
+}
+
+type FileStore struct {
+	filename string
+	habits   map[string]*Habit
+}
+
+func OpenFileStore(filename string) (FileStore, error) {
+	file, err := os.OpenFile(filename, os.O_CREATE|os.O_RDWR, 0600)
+	if err != nil {
+		return FileStore{}, err
+	}
+	defer file.Close()
+
+	fileBytes, err := ioutil.ReadAll(file)
+	if err != nil {
+		return FileStore{}, err
+	}
+	habits := make(map[string]*Habit)
+
+	if len(fileBytes) > 0 {
+		err = json.Unmarshal(fileBytes, &habits)
+		if err != nil {
+			return FileStore{}, err
+		}
+	}
+	fileStore := FileStore{
+		filename: filename,
+		habits:   habits,
+	}
+	return fileStore, nil
+}
+
+func (s *FileStore) Get(name string) (*Habit, error) {
+	habit, ok := s.habits[name]
+	if ok {
+		return habit, nil
+	}
+	return nil, nil
+}
+
+func (s *FileStore) Create(habit *Habit) error {
+	if habit == nil {
+		return NilHabitError
+	}
+
+	if _, ok := s.habits[habit.Name]; ok {
+		return errors.New("habit already exists")
+	}
+	s.habits[habit.Name] = habit
+	err := s.writeFile()
+	if err != nil {
+		return err
+	}
+
+	return nil
+
+}
+
+func (s *FileStore) Update(habit *Habit) error {
+	if habit == nil {
+		return NilHabitError
+	}
+
+	if _, ok := s.habits[habit.Name]; !ok {
+		return errors.New("cannot update habit does not exists")
+	}
+
+	s.habits[habit.Name] = habit
+	err := s.writeFile()
+	return err
+}
+
+func (s *FileStore) writeFile() error {
+	file, err := os.OpenFile(s.filename, os.O_CREATE|os.O_RDWR, 0600)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	fileBytes, err := json.Marshal(s.habits)
+	if err != nil {
+		return err
+	}
+	file.Truncate(0)
+	file.Seek(0, 0)
+	_, err = file.Write(fileBytes)
+	return err
+}
+
+func (s *FileStore) AllHabits() []*Habit {
+	allHabits := make([]*Habit, 0, len(s.habits))
+	for _, h := range s.habits {
+		allHabits = append(allHabits, h)
+	}
+	return allHabits
 }
