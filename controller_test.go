@@ -10,17 +10,25 @@ import (
 func TestNewController(t *testing.T) {
 	t.Parallel()
 	store := habit.OpenMemoryStore()
-	controller := habit.NewController(&store)
+	controller, _ := habit.NewController(&store)
 
 	if controller.Store == nil {
 		t.Errorf("controller.Store should be initialized by new")
 	}
 }
 
+func TestNewControllerReturnsErrorOnNilStore(t *testing.T) {
+	t.Parallel()
+	_, err := habit.NewController(nil)
+	if err == nil {
+		t.Error("want NewController to return error on nil store")
+	}
+}
+
 func TestController_HandleReturnsErrorOnNilHabit(t *testing.T) {
 	t.Parallel()
 	store := habit.OpenMemoryStore()
-	controller := habit.NewController(&store)
+	controller, _ := habit.NewController(&store)
 	_, err := controller.Handle(nil)
 	if err == nil {
 		t.Error("expected err got nil")
@@ -30,7 +38,7 @@ func TestController_HandleReturnsErrorOnNilHabit(t *testing.T) {
 func TestController_HandleReturnsErrorOnEmptyHabitName(t *testing.T) {
 	t.Parallel()
 	store := habit.OpenMemoryStore()
-	controller := habit.NewController(&store)
+	controller, _ := habit.NewController(&store)
 	h := habit.Habit{Name: ""}
 	_, err := controller.Handle(&h)
 	if err == nil {
@@ -46,7 +54,7 @@ func TestController_HandleUpdatesStreaksDueDateCorrectly(t *testing.T) {
 	store := habit.MemoryStore{
 		Habits: map[string]*habit.Habit{"piano": &inputHabit},
 	}
-	controller := habit.NewController(&store)
+	controller, _ := habit.NewController(&store)
 	testCases := []struct {
 		name          string
 		streak        int
@@ -86,7 +94,7 @@ func TestController_HandleUpdatesStreaksDueDateCorrectly(t *testing.T) {
 func TestController_HandleCreatesErrorsOnNoInterval(t *testing.T) {
 	t.Parallel()
 	store := habit.OpenMemoryStore()
-	controller := habit.NewController(&store)
+	controller, _ := habit.NewController(&store)
 
 	newHabit := habit.Habit{Name: "piano"}
 	_, err := controller.Handle(&newHabit)
@@ -98,7 +106,7 @@ func TestController_HandleCreatesErrorsOnNoInterval(t *testing.T) {
 func TestController_HandleCreatesHabit(t *testing.T) {
 	t.Parallel()
 	store := habit.OpenMemoryStore()
-	controller := habit.NewController(&store)
+	controller, _ := habit.NewController(&store)
 
 	newHabit := habit.Habit{Name: "piano", Frequency: habit.DailyInterval}
 	_, err := controller.Handle(&newHabit)
@@ -122,7 +130,7 @@ func TestController_AllHabits(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		controller := habit.NewController(&tc.store)
+		controller, _ := habit.NewController(&tc.store)
 		got := controller.AllHabits()
 		if !strings.Contains(got, tc.want) {
 			t.Errorf("want output to contain %s, got:\n    %s", tc.want, got)

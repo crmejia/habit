@@ -149,7 +149,7 @@ func TestMessageGenerator(t *testing.T) {
 func TestController_HandleSetsMessageCorrectlyForNewHabit(t *testing.T) {
 	t.Parallel()
 	store := habit.OpenMemoryStore()
-	controller := habit.NewController(&store)
+	controller, _ := habit.NewController(&store)
 	h := &habit.Habit{Name: "piano",
 		Frequency: habit.DailyInterval}
 	controller.Handle(h)
@@ -171,7 +171,7 @@ func TestTracker_FetchHabitSetsMessageCorrectlyForStreakBrokenStreak(t *testing.
 		{want: "You last did the habit 'running' 10 days ago, so you're starting a new streak today. Good luck!", habit: &habit.Habit{Name: "running", Streak: 10, DueDate: time.Now().Add(-10 * 24 * time.Hour)}},
 	}
 	store := habit.OpenMemoryStore()
-	controller := habit.NewController(&store)
+	controller, _ := habit.NewController(&store)
 	for _, tc := range testCases {
 
 		store.Habits[tc.habit.Name] = tc.habit

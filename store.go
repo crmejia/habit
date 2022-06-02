@@ -31,6 +31,7 @@ type MemoryStore struct {
 
 var NilHabitError = errors.New("habit cannot be nil")
 
+//OpenMemoryStore returns Memory store. Note that other types reuturn the interface Store
 func OpenMemoryStore() MemoryStore {
 	//here a file store or a db store would get the data from persistence.
 	memoryStore := MemoryStore{
@@ -86,13 +87,13 @@ type DBStore struct {
 }
 
 //OpenDBStore opens a DBStore
-func OpenDBStore(dbSource string) (DBStore, error) {
+func OpenDBStore(dbSource string) (Store, error) {
 	if dbSource == "" {
-		return DBStore{}, errors.New("empty dbSource string")
+		return &DBStore{}, errors.New("empty dbSource string")
 	}
 	db, err := sql.Open("sqlite3", dbSource)
 	if err != nil {
-		return DBStore{}, err
+		return &DBStore{}, err
 	}
 
 	const createTable = `
@@ -105,10 +106,9 @@ duedate TEXT NOT NULL );`
 	_, err = db.Exec(createTable, nil)
 
 	if err != nil {
-		return DBStore{}, err
+		return &DBStore{}, err
 	}
-
-	return DBStore{db: db}, nil
+	return &DBStore{db: db}, nil
 }
 
 func (s *DBStore) Get(name string) (*Habit, error) {
@@ -233,30 +233,30 @@ type FileStore struct {
 	habits   map[string]*Habit
 }
 
-func OpenFileStore(filename string) (FileStore, error) {
+func OpenFileStore(filename string) (Store, error) {
 	file, err := os.OpenFile(filename, os.O_CREATE|os.O_RDWR, 0600)
 	if err != nil {
-		return FileStore{}, err
+		return &FileStore{}, err
 	}
 	defer file.Close()
 
 	fileBytes, err := ioutil.ReadAll(file)
 	if err != nil {
-		return FileStore{}, err
+		return &FileStore{}, err
 	}
 	habits := make(map[string]*Habit)
 
 	if len(fileBytes) > 0 {
 		err = json.Unmarshal(fileBytes, &habits)
 		if err != nil {
-			return FileStore{}, err
+			return &FileStore{}, err
 		}
 	}
 	fileStore := FileStore{
 		filename: filename,
 		habits:   habits,
 	}
-	return fileStore, nil
+	return &fileStore, nil
 }
 
 func (s *FileStore) Get(name string) (*Habit, error) {

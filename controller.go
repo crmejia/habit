@@ -26,8 +26,11 @@ type Controller struct {
 	Store Store
 }
 
-func NewController(store Store) Controller {
-	return Controller{Store: store}
+func NewController(store Store) (Controller, error) {
+	if store == nil {
+		return Controller{}, errors.New("store cannot be nil")
+	}
+	return Controller{Store: store}, nil
 }
 
 func (c Controller) Handle(input *Habit) (*Habit, error) {
