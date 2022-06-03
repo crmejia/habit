@@ -7,34 +7,30 @@ import (
 	"testing"
 )
 
-//func TestNoArgsShowsUsageHelpOnNoHabits(t *testing.T) {
-//	t.Parallel()
-//	buffer := bytes.Buffer{}
-//	habit.RunCLI([]string{}, &buffer)
-//
-//	got := buffer.String()
-//	if !strings.Contains(got, "Usage") {
-//		t.Errorf("no arguments and no previous habits should print usage Message got:\n    %s", got)
-//	}
-//}
+func TestNoArgsShowsUsageHelp(t *testing.T) {
+	t.Parallel()
+	buffer := bytes.Buffer{}
+	habit.RunCLI([]string{}, &buffer)
 
-//func TestNoArgsShowsAllHabitsWithExistingHabits(t *testing.T) {
-//	t.Parallel()
-//	t.Skip()
-//	buffer := bytes.Buffer{}
-//	store := habit.OpenMemoryStore()
-//	store.Habits = map[string]*habit.Habit{
-//		"piano": &habit.Habit{Name: "piano"},
-//	}
-//	habit.RunCLI([]string{}, &buffer)
-//
-//	want := "Habits:"
-//	got := buffer.String()
-//	if !strings.Contains(got, want) {
-//		// if habits exist in store, a summary of all habits should be displayed
-//		t.Errorf("no arguments and previous habits should print a summary of all habits got\n:  %s", got)
-//	}
-//}
+	got := buffer.String()
+	if !strings.Contains(got, "Usage") {
+		t.Errorf("no arguments and no previous habits should print usage Message got:\n    %s", got)
+	}
+}
+
+func TestAllShowsAllHabits(t *testing.T) {
+	t.Parallel()
+	args := []string{"all"}
+	buffer := bytes.Buffer{}
+	habit.RunCLI(args, &buffer)
+
+	want := "Habits:"
+	got := buffer.String()
+	if !strings.Contains(got, want) {
+		// if habits exist in store, a summary of all habits should be displayed
+		t.Errorf("habit all should print a summary of all habits got\n:  %s", got)
+	}
+}
 
 func TestMoreThanOneArgShowsUsageHelp(t *testing.T) {
 	t.Parallel()
@@ -75,26 +71,26 @@ func TestWrongOptionsDisplaysErrorShowsUsageHelp(t *testing.T) {
 	}
 }
 
-//func TestNewHabitShowNewHabitMessage(t *testing.T) {
-//	t.Parallel()
-//	buffer := bytes.Buffer{}
-//	testCases := []struct {
-//		args []string
-//		want string
-//	}{
-//		{args: []string{"piano"}, want: "again tomorrow."},
-//		{args: []string{"-f", "weekly", "piano"}, want: "again in a week."},
-//	}
-//
-//	for _, tc := range testCases {
-//		habit.RunCLI(tc.args, &buffer)
-//		got := buffer.String()
-//		if !strings.Contains(got, tc.want) {
-//			t.Errorf("new habit should print streak message. Got:\n  %s", got)
-//		}
-//		buffer.Truncate(0)
-//	}
-//}
+func TestNewHabitShowNewHabitMessage(t *testing.T) {
+	t.Parallel()
+	buffer := bytes.Buffer{}
+	testCases := []struct {
+		args []string
+		want string
+	}{
+		{args: []string{"piano"}, want: "again tomorrow."},
+		{args: []string{"-f", "weekly", "piano"}, want: "again in a week."},
+	}
+
+	for _, tc := range testCases {
+		habit.RunCLI(tc.args, &buffer)
+		got := buffer.String()
+		if !strings.Contains(got, tc.want) {
+			t.Errorf("new habit should print streak message. Got:\n  %s", got)
+		}
+		buffer.Truncate(0)
+	}
+}
 
 func TestNewHabitInvalidFrequencyShowsErrorUsageHelp(t *testing.T) {
 	t.Parallel()

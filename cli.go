@@ -7,21 +7,21 @@ import (
 	"io"
 )
 
-const (
-	frequencyUsage = "Set the frequency of the habit: daily(default), weekly."
-	storeTypeUsage = "Set the store backend for habit tracker: db(default), file"
-	helpIntro      = `habit is an application to assist you in building habits
-     habit <options> <HABIT_NAME> -- to create/update a new habit
-habit  -- to list all habits`
-)
-
 //RunCLI parses arguments and runs habit tracker
 func RunCLI(args []string, output io.Writer) {
 	flagSet := flag.NewFlagSet("habit", flag.ContinueOnError)
 	flagSet.SetOutput(output)
+	flagSet.Usage = func() {
+		fmt.Fprintln(output,
+			`habit is an application to assist you in building habits
+Usage: habit <Option Flags> <HABIT_NAME> -- to create/update a new habit
+       habit all   --   to list all habits
+Option Flags:`)
+		flagSet.PrintDefaults()
+	}
 
-	frequency := flagSet.String("f", "daily", frequencyUsage)
-	storeType := flagSet.String("s", "db", storeTypeUsage)
+	frequency := flagSet.String("f", "daily", "Set the frequency of the habit: daily(default), weekly.")
+	storeType := flagSet.String("s", "db", "Set the store backend for habit tracker: db(default), file")
 
 	err := flagSet.Parse(args)
 	if err != nil {
@@ -29,62 +29,33 @@ func RunCLI(args []string, output io.Writer) {
 		return
 	}
 
+	if len(flagSet.Args()) == 0 {
+		flagSet.Usage()
+		return
+	}
+
 	if len(flagSet.Args()) > 1 {
 		fmt.Fprintln(output, "too many args")
-		fmt.Fprintln(output, helpIntro)
 		flagSet.Usage()
 		return
-	}
-	dir, err := homedir.Dir()
-	if err != nil {
-		fmt.Println(err)
 	}
 
-	var store Store
-	var opener func(string) (Store, error)
-	var source string
-	switch *storeType {
-	case "db":
-		opener = OpenDBStore
-		source = dir + "/.habitTracker.db"
-	case "file":
-		opener = OpenFileStore
-		source = dir + "/.habitTracker"
-	default:
-		fmt.Fprintf(output, "unknown store type %s\n", *storeType)
-		fmt.Fprintln(output, helpIntro)
+	store, err := storeFactory(*storeType)
+	if err != nil {
+		fmt.Fprintln(output, err)
 		flagSet.Usage()
 		return
 	}
-	store, err = opener(source)
-	if err != nil {
-		fmt.Fprintln(output, err)
-	}
+	controller, err := NewController(*store)
 
-	controller, err := NewController(store)
-	if err != nil {
-		fmt.Fprintln(output, err)
-	}
-	if len(args) == 0 {
-		allHabits := controller.AllHabits()
-		if allHabits == "" {
-			fmt.Fprintln(output, helpIntro)
-			flagSet.Usage()
-			return
-		}
-		fmt.Fprintln(output, allHabits)
-		return
-	}
-	if len(flagSet.Args()) == 0 {
-		fmt.Fprintln(output, helpIntro)
-		flagSet.Usage()
+	if flagSet.Args()[0] == "all" {
+		fmt.Fprintln(output, controller.AllHabits())
 		return
 	}
 
 	h, err := ParseHabit(flagSet.Args()[0], *frequency)
 	if err != nil {
 		fmt.Fprintln(output, err)
-		fmt.Fprintln(output, helpIntro)
 		flagSet.Usage()
 		return
 	}
@@ -97,4 +68,28 @@ func RunCLI(args []string, output io.Writer) {
 	fmt.Fprintln(output, h)
 
 	return
+}
+
+func storeFactory(storeType string) (*Store, error) {
+	dir, err := homedir.Dir()
+	if err != nil {
+		return nil, err
+	}
+	var opener func(string) (Store, error)
+	var source string
+	switch storeType {
+	case "db":
+		opener = OpenDBStore
+		source = dir + "/.habitTracker.db"
+	case "file":
+		opener = OpenFileStore
+		source = dir + "/.habitTracker"
+	default:
+		return nil, fmt.Errorf("unknown store type %s\n", storeType)
+	}
+	store, err := opener(source)
+	if err != nil {
+		return nil, err
+	}
+	return &store, nil
 }
