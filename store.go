@@ -276,7 +276,7 @@ func (s *FileStore) Create(habit *Habit) error {
 		return errors.New("habit already exists")
 	}
 	s.habits[habit.Name] = habit
-	err := s.writeFile()
+	err := WriteHabitsToFile(s.filename, s.habits)
 	if err != nil {
 		return err
 	}
@@ -295,18 +295,18 @@ func (s *FileStore) Update(habit *Habit) error {
 	}
 
 	s.habits[habit.Name] = habit
-	err := s.writeFile()
+	err := WriteHabitsToFile(s.filename, s.habits)
 	return err
 }
 
-func (s *FileStore) writeFile() error {
-	file, err := os.OpenFile(s.filename, os.O_CREATE|os.O_RDWR, 0600)
+func WriteHabitsToFile(filename string, habits map[string]*Habit) error {
+	file, err := os.OpenFile(filename, os.O_CREATE|os.O_RDWR, 0600)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
 
-	fileBytes, err := json.Marshal(s.habits)
+	fileBytes, err := json.Marshal(habits)
 	if err != nil {
 		return err
 	}

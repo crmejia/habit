@@ -22,8 +22,13 @@ Option Flags:`)
 
 	frequency := flagSet.String("f", "daily", "Set the frequency of the habit: daily(default), weekly.")
 	storeType := flagSet.String("s", "db", "Set the store backend for habit tracker: db(default), file")
+	homeDir, err := homedir.Dir()
+	if err != nil {
+		fmt.Println(err)
+	}
+	storeDir := flagSet.String("d", homeDir, "Set the store directory. User's home directory is the default")
 
-	err := flagSet.Parse(args)
+	err = flagSet.Parse(args)
 	if err != nil {
 		fmt.Fprintln(output, err)
 		return
@@ -40,7 +45,7 @@ Option Flags:`)
 		return
 	}
 
-	store, err := storeFactory(*storeType)
+	store, err := StoreFactory(*storeType, *storeDir)
 	if err != nil {
 		fmt.Fprintln(output, err)
 		flagSet.Usage()
@@ -70,11 +75,7 @@ Option Flags:`)
 	return
 }
 
-func storeFactory(storeType string) (*Store, error) {
-	dir, err := homedir.Dir()
-	if err != nil {
-		return nil, err
-	}
+func StoreFactory(storeType string, dir string) (*Store, error) {
 	var opener func(string) (Store, error)
 	var source string
 	switch storeType {
