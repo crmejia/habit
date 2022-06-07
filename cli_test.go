@@ -18,7 +18,7 @@ func TestRunCLIShowsUsageHelpNoArgs(t *testing.T) {
 	}
 }
 
-func TestRunCLIShowsAllHabits(t *testing.T) {
+func TestRunCLIAllShowsCorrectly(t *testing.T) {
 	t.Parallel()
 	args := []string{"all"}
 	buffer := bytes.Buffer{}

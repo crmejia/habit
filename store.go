@@ -22,7 +22,7 @@ type Store interface {
 	Get(name string) (*Habit, error)
 	Create(habit *Habit) error
 	Update(habit *Habit) error
-	AllHabits() []*Habit
+	GetAllHabits() []*Habit
 }
 
 type MemoryStore struct {
@@ -73,7 +73,7 @@ func (s *MemoryStore) Update(habit *Habit) error {
 	return nil
 }
 
-func (s MemoryStore) AllHabits() []*Habit {
+func (s MemoryStore) GetAllHabits() []*Habit {
 	allHabits := make([]*Habit, 0, len(s.Habits))
 	for _, h := range s.Habits {
 		allHabits = append(allHabits, h)
@@ -187,7 +187,7 @@ UPDATE habit SET streak = ?, frequency = ?, duedate = ? WHERE NAME = ?
 	}
 	return nil
 }
-func (s *DBStore) AllHabits() []*Habit {
+func (s *DBStore) GetAllHabits() []*Habit {
 
 	const getAllHabits = `
 SELECT name, streak, frequency, duedate FROM habit
@@ -316,7 +316,7 @@ func WriteHabitsToFile(filename string, habits map[string]*Habit) error {
 	return err
 }
 
-func (s *FileStore) AllHabits() []*Habit {
+func (s *FileStore) GetAllHabits() []*Habit {
 	allHabits := make([]*Habit, 0, len(s.habits))
 	for _, h := range s.habits {
 		allHabits = append(allHabits, h)

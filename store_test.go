@@ -115,9 +115,9 @@ func TestMemoryStore_AllHabitsReturnsSliceOfHabits(t *testing.T) {
 		"surfing": &habit.Habit{Name: "surfing"},
 	}
 
-	allHabits := store.AllHabits()
+	allHabits := store.GetAllHabits()
 	if len(allHabits) != len(store.Habits) {
-		t.Error("want AllHabits to return a slice of habits")
+		t.Error("want GetAllHabits to return a slice of habits")
 	}
 }
 
@@ -300,9 +300,9 @@ func TestDBStore_AllHabits(t *testing.T) {
 		dbStore.Create(h)
 	}
 
-	got := dbStore.AllHabits()
+	got := dbStore.GetAllHabits()
 	if len(got) != len(habits) {
-		t.Errorf("want AllHabits to return %d habits, got %d", len(habits), len(got))
+		t.Errorf("want GetAllHabits to return %d habits, got %d", len(habits), len(got))
 	}
 }
 
@@ -449,8 +449,8 @@ func TestFileStore_AllHabitsReturnsSliceOfHabits(t *testing.T) {
 		fileStore.Create(h)
 	}
 
-	got := fileStore.AllHabits()
+	got := fileStore.GetAllHabits()
 	if len(got) != len(habits) {
-		t.Errorf("want AllHabits to return %d habits, got %d", len(habits), len(got))
+		t.Errorf("want GetAllHabits to return %d habits, got %d", len(habits), len(got))
 	}
 }

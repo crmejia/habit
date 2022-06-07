@@ -76,12 +76,12 @@ func TestController_HandleUpdatesStreaksDueDateCorrectly(t *testing.T) {
 		inputHabit.DueDate = tc.dueDate
 		inputHabit.Frequency = tc.interval
 
-		h, _ := controller.Handle(&habit.Habit{Name: "piano"})
+		h, _ := controller.Handle(&inputHabit)
 
 		if h.Name != "piano" {
 			t.Errorf("wantedStreak piano to be the habit's testName got %s", h.Name)
 		}
-		if h.Streak != tc.wantedStreak {
+		if store.Habits["piano"].Streak != tc.wantedStreak {
 			t.Errorf("%s. Want habit.Streak to be %d got %d", tc.name, tc.wantedStreak, h.Streak)
 		}
 
@@ -125,13 +125,13 @@ func TestController_AllHabits(t *testing.T) {
 		store habit.MemoryStore
 		want  string
 	}{
-		{store: habit.MemoryStore{Habits: map[string]*habit.Habit{}}, want: ""},
+		{store: habit.MemoryStore{Habits: map[string]*habit.Habit{}}, want: "no habits have been started"},
 		{store: habit.MemoryStore{Habits: map[string]*habit.Habit{"piano": &habit.Habit{Name: "piano"}}}, want: "piano"},
 	}
 
 	for _, tc := range testCases {
 		controller, _ := habit.NewController(&tc.store)
-		got := controller.AllHabits()
+		got := controller.GetAllHabits()
 		if !strings.Contains(got, tc.want) {
 			t.Errorf("want output to contain %s, got:\n    %s", tc.want, got)
 		}

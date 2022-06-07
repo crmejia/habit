@@ -54,7 +54,7 @@ Option Flags:`)
 	controller, err := NewController(*store)
 
 	if flagSet.Args()[0] == "all" {
-		fmt.Fprintln(output, controller.AllHabits())
+		fmt.Fprint(output, controller.GetAllHabits())
 		return
 	}
 

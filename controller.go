@@ -48,6 +48,10 @@ func (c Controller) Handle(input *Habit) (*Habit, error) {
 	}
 	if h != nil {
 		h.updateHabit()
+		err = c.Store.Update(h)
+		if err != nil {
+			return nil, err
+		}
 		return h, nil
 	}
 
@@ -65,10 +69,10 @@ func (c Controller) Handle(input *Habit) (*Habit, error) {
 	return input, nil
 }
 
-func (c Controller) AllHabits() string {
-	allHabits := c.Store.AllHabits()
+func (c Controller) GetAllHabits() string {
+	allHabits := c.Store.GetAllHabits()
 	if len(allHabits) == 0 {
-		return ""
+		return "no habits have been started"
 	}
 	message := "Habits:\n"
 	for _, h := range allHabits {
