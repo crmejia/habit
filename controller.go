@@ -39,7 +39,7 @@ func (c Controller) Handle(input *Habit) (*Habit, error) {
 	}
 
 	if input.Name == "" {
-		return nil, errors.New("input testName cannot be empty")
+		return nil, errors.New("inputHabit name cannot be empty")
 	}
 
 	h, err := c.Store.Get(input.Name)
