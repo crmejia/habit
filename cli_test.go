@@ -2,7 +2,7 @@ package habit_test
 
 import (
 	"bytes"
-	"habit"
+	"github.com/crmejia/habit"
 	"strings"
 	"testing"
 )

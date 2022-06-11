@@ -1,4 +1,4 @@
-module habit
+module github.com/crmejia/habit
 
 go 1.17
 

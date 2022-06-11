@@ -1,7 +1,7 @@
 package habit_test
 
 import (
-	"habit"
+	"github.com/crmejia/habit"
 	"os"
 	"testing"
 	"time"

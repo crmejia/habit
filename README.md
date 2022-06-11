@@ -3,7 +3,7 @@ Is a simple tool to keep track of your habits. It can be run from the command-li
 
 ## CLI mode
 ### Installation
-Install by running `go install https://github.com/crmejia/habit/cmd/habit@latest`
+Install by running `go install github.com/crmejia/habit/cmd/habit@latest`
 
 ### Usage
 To start a new habit, for example a daily piano habit, simply type `habit piano`  on your terminal. As you repeat your habit daily, 
@@ -24,7 +24,7 @@ Option Flags:
 
 ## Server Mode
 ### Installation
-Install by running `go install https://github.com/crmejia/habit/cmd/habit@latest`
+Install by running `go install github.com/crmejia/habit/cmd/server@latest`
 
 ### Usage
 To start Habit as a server type `habit -s 127.0.0.1:8080`. If no address is provided `127.0.0.1:8080` is set as the
