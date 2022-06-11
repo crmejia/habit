@@ -3,105 +3,97 @@ package habit
 import (
 	"flag"
 	"fmt"
+	"github.com/mitchellh/go-homedir"
 	"io"
-	"log"
 )
 
-const (
-	frequencyUsage  = "Set the frequency of the habit: daily, weekly."
-	serverModeUsage = "Runs habit as a HTTP Server"
-	helpIntro       = `habit is an application to assist you in building habits
-     habit <options> <HABIT_NAME> -- to create/update a new habit
-habit  -- to list all habits`
-)
-
-//RunCLI parses arguments and runs habit tracker
-func RunCLI(filename string, args []string, output io.Writer) {
+//RunCLI parses arguments and passes them to habit.Controller]
+func RunCLI(args []string, output io.Writer) {
 	flagSet := flag.NewFlagSet("habit", flag.ContinueOnError)
 	flagSet.SetOutput(output)
+	flagSet.Usage = func() {
+		fmt.Fprintln(output,
+			`habit is an application to assist you in building habits
+Usage: habit <Option Flags> <HABIT_NAME> -- to create/update a new habit
+       habit all   --   to list all habits
+Option Flags:`)
+		flagSet.PrintDefaults()
+	}
 
-	frequency := flagSet.String("f", "daily", frequencyUsage)
-	serverMode := flagSet.Bool("s", false, serverModeUsage)
-
-	err := flagSet.Parse(args)
+	frequency := flagSet.String("f", "daily", "Set the frequency of the habit: daily(default), weekly.")
+	storeType := flagSet.String("s", "db", "Set the store backend for habit tracker: db(default), file")
+	homeDir, err := homedir.Dir()
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println(err)
+	}
+	storeDir := flagSet.String("d", homeDir, "Set the store directory. User's home directory is the default")
+
+	err = flagSet.Parse(args)
+	if err != nil {
+		fmt.Fprintln(output, err)
+		return
+	}
+
+	if len(flagSet.Args()) == 0 {
+		flagSet.Usage()
+		return
 	}
 
 	if len(flagSet.Args()) > 1 {
 		fmt.Fprintln(output, "too many args")
-		fmt.Fprintln(output, helpIntro)
 		flagSet.Usage()
 		return
 	}
-	store := NewFileStore(filename)
-	tracker, err := store.Load()
+
+	store, err := storeFactory(*storeType, *storeDir)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Fprintln(output, err)
+		flagSet.Usage()
+		return
 	}
-
-	if len(args) == 0 {
-		if len(tracker) > 0 {
-			fmt.Fprintln(output, AllHabits(store))
-			return
-		}
-		// no previous habits
-		fmt.Fprintln(output, helpIntro)
+	controller, err := NewController(*store)
+	if err != nil {
+		fmt.Fprintln(output, err)
 		flagSet.Usage()
 		return
 	}
 
-	if len(flagSet.Args()) == 0 && !(*serverMode) {
-		// no habit specified
-		fmt.Fprintln(output, helpIntro)
+	if flagSet.Args()[0] == "all" {
+		fmt.Fprint(output, controller.GetAllHabits())
+		return
+	}
+
+	h, err := parseHabit(flagSet.Args()[0], *frequency)
+	if err != nil {
+		fmt.Fprintln(output, err)
 		flagSet.Usage()
 		return
 	}
 
-	if *serverMode {
-		address := defaultTCPAddress
-		if len(flagSet.Args()) > 0 {
-			address = flagSet.Args()[0]
-		}
-		runHTTPServer(store, address)
-	} else {
-		habitName := flagSet.Args()[0]
-		runCLI(store, habitName, *frequency)
+	h, err = controller.Handle(h)
+	if err != nil {
+		fmt.Fprintln(output, err)
+		return
 	}
-	return
+	fmt.Fprintln(output, h)
 }
 
-func runCLI(store Store, habitName, frequency string) {
-	ht := NewTracker(store)
-	habit, ok := ht.FetchHabit(habitName)
-
-	if !ok {
-		habit = &Habit{
-			Name: habitName,
-		}
-		if frequency == "daily" {
-			habit.Interval = DailyInterval
-		} else if frequency == "weekly" {
-			habit.Interval = WeeklyInterval
-		} else {
-			fmt.Printf("unknown frecuency %s", frequency)
-			return
-		}
-		err := ht.CreateHabit(habit)
-		if err != nil {
-			log.Fatal(err)
-		}
+func storeFactory(storeType string, dir string) (*Store, error) {
+	var opener func(string) (Store, error)
+	var source string
+	switch storeType {
+	case "db":
+		opener = OpenDBStore
+		source = dir + "/.habitTracker.db"
+	case "file":
+		opener = OpenFileStore
+		source = dir + "/.habitTracker"
+	default:
+		return nil, fmt.Errorf("unknown store type %s", storeType)
 	}
-
-	err := store.Write(&ht)
-
+	store, err := opener(source)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
-	fmt.Println(habit)
-}
-
-func runHTTPServer(store Store, address string) {
-	server := NewServer(store, address)
-	server.Run()
+	return &store, nil
 }

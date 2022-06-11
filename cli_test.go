@@ -2,73 +2,43 @@ package habit_test
 
 import (
 	"bytes"
-	"fmt"
-	"github.com/phayes/freeport"
 	"habit"
-	"io/ioutil"
-	"net/http"
 	"strings"
 	"testing"
-	"time"
 )
 
-const (
-	usage  = "Usage"
-	habits = "Habits:"
-	streak = "streak"
-)
-
-func TestNoArgsShowsUsageHelpOnNoHabits(t *testing.T) {
+func TestRunCLIShowsUsageHelpNoArgs(t *testing.T) {
 	t.Parallel()
-	var args []string
 	buffer := bytes.Buffer{}
-	tmpFile := CreateTmpFile(t)
+	habit.RunCLI([]string{}, &buffer)
 
-	habit.RunCLI(tmpFile.Name(), args, &buffer)
-
-	want := usage
 	got := buffer.String()
-
-	if !strings.Contains(got, want) {
-		t.Errorf("no arguments and no previous habits should print usage Message got\n:  %s", got)
+	if !strings.Contains(got, "Usage") {
+		t.Errorf("no arguments and no previous habits should print usage Message got:\n    %s", got)
 	}
 }
 
-func TestNoArgsShowsAllHabitsWithExistingHabits(t *testing.T) {
+func TestRunCLIAllShowsCorrectly(t *testing.T) {
 	t.Parallel()
-	var args []string
+	args := []string{"all"}
 	buffer := bytes.Buffer{}
-	tmpFile := CreateTmpFile(t)
+	habit.RunCLI(args, &buffer)
 
-	writeTracker := habit.Tracker{
-		"piano": &habit.Habit{
-			Name:     "piano",
-			Interval: habit.WeeklyInterval,
-			Streak:   1,
-			DueDate:  time.Now().Add(habit.WeeklyInterval),
-		},
-	}
-
-	writeFileStore := habit.NewFileStore(tmpFile.Name())
-	writeFileStore.Write(&writeTracker)
-	habit.RunCLI(tmpFile.Name(), args, &buffer)
-
-	want := habits
+	want := "Habits:"
 	got := buffer.String()
 	if !strings.Contains(got, want) {
 		// if habits exist in store, a summary of all habits should be displayed
-		t.Errorf("no arguments and previous habits should print a summary of all habits got\n:  %s", got)
+		t.Errorf("habit all should print a summary of all habits got\n:  %s", got)
 	}
 }
 
-func TestMoreThanOneArgShowsUsageHelp(t *testing.T) {
+func TestRunCLIShowsUsageHelpMoreThanOneArg(t *testing.T) {
 	t.Parallel()
 	args := []string{"blah", "blah"}
 	buffer := bytes.Buffer{}
-	tmpFile := CreateTmpFile(t)
+	habit.RunCLI(args, &buffer)
 
-	want := usage
-	habit.RunCLI(tmpFile.Name(), args, &buffer)
+	want := "Usage"
 	got := buffer.String()
 
 	if !strings.Contains(got, want) {
@@ -76,92 +46,89 @@ func TestMoreThanOneArgShowsUsageHelp(t *testing.T) {
 	}
 }
 
-func TestOptionsButNoArgsShowsUsageHelp(t *testing.T) {
+func TestRunCLIShowsUsageHelpOptionsButNoArgs(t *testing.T) {
 	t.Parallel()
 	args := []string{"-f", "daily"}
 	buffer := bytes.Buffer{}
-	tmpFile := CreateTmpFile(t)
 
 	want := "Usage"
-	habit.RunCLI(tmpFile.Name(), args, &buffer)
+	habit.RunCLI(args, &buffer)
 	got := buffer.String()
-
 	if !strings.Contains(got, want) {
 		t.Errorf("only options and no arguments should print usage Message got: %s", got)
 	}
 }
 
-func TestOptionServerStartsHTTPServerReturns404NoHabits(t *testing.T) {
+func TestRunCLIShowsErrorUsageHelpWrongOptions(t *testing.T) {
 	t.Parallel()
-	tmpFile := CreateTmpFile(t)
-	freePort, err := freeport.GetFreePort()
-	if err != nil {
-		t.Fatal(err)
-	}
-	address := fmt.Sprintf("%s:%d", localHostAddress, freePort)
-	args := []string{"-s", address}
+	args := []string{"-g", "gibberish"}
 	buffer := bytes.Buffer{}
 
-	go habit.RunCLI(tmpFile.Name(), args, &buffer)
-	time.Sleep(2 * time.Second)
-	resp, err := http.Get("http://" + address)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if resp.StatusCode != http.StatusNotFound {
-		t.Errorf("Want Status %d, got: %d", http.StatusNotFound, resp.StatusCode)
-	}
-
-	want := notFound
-	got, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		t.Errorf("Not able to parse response")
-	}
-	if !strings.Contains(string(got), want) {
-		t.Errorf("want response body to be:\n %s \ngot:\n %s", want, got)
+	habit.RunCLI(args, &buffer)
+	got := buffer.String()
+	if !strings.Contains(got, "Usage") {
+		t.Errorf("only options and no arguments should print usage Message got: %s", got)
 	}
 }
 
-func TestOptionServerStartsHTTPServerReturns200ExistingHabits(t *testing.T) {
+func TestRunClIShowNewHabitMessageNewHabit(t *testing.T) {
 	t.Parallel()
-	tmpFile := CreateTmpFile(t)
-	freePort, err := freeport.GetFreePort()
-	if err != nil {
-		t.Fatal(err)
-	}
-	address := fmt.Sprintf("%s:%d", localHostAddress, freePort)
-	args := []string{"-s", address}
 	buffer := bytes.Buffer{}
+	tmpDir := t.TempDir()
+	args := []string{"-d", tmpDir, "piano"}
 
-	writeTracker := habit.Tracker{
-		"piano": &habit.Habit{
-			Name:     "piano",
-			Interval: habit.WeeklyInterval,
-			Streak:   1,
-			DueDate:  time.Now().Add(habit.WeeklyInterval),
-		},
+	habit.RunCLI(args, &buffer)
+	want := "Good luck with your new habit"
+	got := buffer.String()
+	if !strings.Contains(got, want) {
+		t.Errorf("new habit should print streak message. Got:\n  %s", got)
 	}
-	writeFileStore := habit.NewFileStore(tmpFile.Name())
-	writeFileStore.Write(&writeTracker)
+}
 
-	go habit.RunCLI(tmpFile.Name(), args, &buffer)
-	time.Sleep(2 * time.Second)
-	resp, err := http.Get("http://" + address)
-	if err != nil {
-		t.Fatal(err)
-	}
+func TestRunCLIShowsErrorUsageHelpInvalidFrequency(t *testing.T) {
+	t.Parallel()
+	args := []string{"-f", "yellow", "piano"}
+	buffer := bytes.Buffer{}
+	habit.RunCLI(args, &buffer)
 
-	if resp.StatusCode != http.StatusOK {
-		t.Errorf("Want Status %d, got: %d", http.StatusNotFound, resp.StatusCode)
-	}
+	got := buffer.String()
 
-	want := streak
-	got, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		t.Errorf("Not able to parse response")
+	if !strings.Contains(got, "unknown frequency:") {
+		t.Errorf("Invalid frecuency should print error message got: %s", got)
 	}
-	if !strings.Contains(string(got), want) {
-		t.Errorf("want response body to be:\n %s \ngot:\n %s", want, got)
+	if !strings.Contains(got, "Usage") {
+		t.Errorf("Invalid frecuency should print usage Message got: %s", got)
+	}
+}
+
+func TestRunCLIShowsErrorUsageHelpEmptyFrequency(t *testing.T) {
+	t.Parallel()
+	args := []string{"-f", "", "piano"}
+	buffer := bytes.Buffer{}
+	habit.RunCLI(args, &buffer)
+
+	got := buffer.String()
+
+	if !strings.Contains(got, "habit frequency cannot be empty") {
+		t.Errorf("Empty frecuency should print error message got: %s", got)
+	}
+	if !strings.Contains(got, "Usage") {
+		t.Errorf("Empty frecuency should print usage Message got: %s", got)
+	}
+}
+
+func TestRunCLIShowsErrorUsageHelpInvalidStoreType(t *testing.T) {
+	t.Parallel()
+	args := []string{"-s", "cloud", "piano"}
+	buffer := bytes.Buffer{}
+	habit.RunCLI(args, &buffer)
+
+	got := buffer.String()
+
+	if !strings.Contains(got, "unknown store type") {
+		t.Errorf("Invalid frecuency should print error message got: %s", got)
+	}
+	if !strings.Contains(got, "Usage") {
+		t.Errorf("Invalid frecuency should print usage Message got: %s", got)
 	}
 }

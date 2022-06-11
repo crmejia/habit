@@ -1,92 +1,88 @@
 package habit
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
-	"time"
-)
-
-const (
-	defaultTCPAddress = "127.0.0.1:8080"
 )
 
 type server struct {
-	Server  *http.Server
-	Tracker *Tracker
-	Store   Store
+	*http.Server
+	controller *Controller
 }
 
 //NewServer returns a new server
-func NewServer(store Store, address string) *server {
-	tracker := NewTracker(store)
+func NewServer(controller *Controller, address string) (*server, error) {
+	if controller == nil {
+		return nil, errors.New("controller cannot be nil")
+	}
+	if address == "" {
+		return nil, errors.New("address cannot be empty")
+	}
+
 	server := server{
 		Server: &http.Server{
 			Addr: address},
-		Tracker: &tracker,
-		Store:   store,
+		controller: controller,
 	}
-	return &server
+	return &server, nil
 }
 
 //Run listens and serves http
 func (server *server) Run() {
-	router := server.Router()
-	server.Server.Handler = router
+	router := server.Routes()
+	server.Handler = router
 
-	err := server.Server.ListenAndServe()
+	err := server.ListenAndServe()
 	if err != http.ErrServerClosed {
 		log.Println(err)
 	}
 }
 
-//Router returns a http.Handler with the appropriate routes
-func (server *server) Router() http.Handler {
+//Routes returns a http.Handler with the appropriate routes
+func (server *server) Routes() http.Handler {
 	router := http.NewServeMux()
-	router.HandleFunc("/", server.HabitHandler)
+	router.HandleFunc("/", server.HandleIndex())
+	router.HandleFunc("/all", server.HandleAll())
 
 	return router
 }
 
-//HabitHandler Handler that servers habits.
-func (server *server) HabitHandler(w http.ResponseWriter, r *http.Request) {
-	//parsing querystring
-	habitName := r.FormValue("habit")
-	if r.RequestURI == "/all" || r.RequestURI == "/" {
-		if len(*server.Tracker) > 0 {
-			fmt.Fprint(w, AllHabits(server.Store))
+//HandleIndex handler that servers habits.
+func (server *server) HandleIndex() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		//parsing querystring
+		habitName := r.FormValue("habit")
+		if habitName == "" || r.URL.Path != "/" {
+			http.Error(w, "cannot parse querystring", http.StatusBadRequest)
 			return
 		}
-		http.Error(w, "not found", http.StatusNotFound)
-		return
-	} else if habitName == "" || r.URL.Path != "/" {
-		http.Error(w, "cannot parse querystring", http.StatusBadRequest)
-		return
-	}
 
-	intervalString := r.FormValue("interval")
-	var interval time.Duration
-	if intervalString == "" || intervalString == "daily" {
-		interval = DailyInterval
-	} else if intervalString == "weekly" {
-		interval = WeeklyInterval
-	} else {
-		http.Error(w, "invalid interval", http.StatusBadRequest)
-		return
-	}
+		frequency := r.FormValue("frequency")
+		if frequency == "" {
+			frequency = "daily" //default frequency
+		}
 
-	habit, ok := server.Tracker.FetchHabit(habitName)
-	if !ok {
-		habit = &Habit{Name: habitName, Interval: interval}
-
-		// this error is hard to test as the conditions that trigger cannot be met:
-		// - trying to create an existing habit(which FetchHabit(ln67) covers
-		// - invalid interval which ln59-65 cover
-		err := server.Tracker.CreateHabit(habit)
+		inputHabit, err := parseHabit(habitName, frequency)
 		if err != nil {
-			http.Error(w, "not able to create habit", http.StatusInternalServerError)
+			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
+
+		h, err := server.controller.Handle(inputHabit)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusNotFound)
+			return
+		}
+		fmt.Fprint(w, h)
 	}
-	fmt.Fprint(w, habit)
+}
+
+//HandleAll handler that serves /all
+func (server *server) HandleAll() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		allHabits := server.controller.GetAllHabits()
+		fmt.Fprint(w, allHabits)
+	}
 }

@@ -7,32 +7,30 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
-	"time"
 )
 
 const (
 	localHostAddress = "127.0.0.1"
-	notFound         = "not found"
 )
 
 func TestNewHttpServer(t *testing.T) {
 	t.Parallel()
-	tmpFile := CreateTmpFile(t)
 
-	store := habit.NewFileStore(tmpFile.Name())
-	server := habit.NewServer(store, localHostAddress)
+	store := habit.OpenMemoryStore()
+	controller, _ := habit.NewController(&store)
+	server, _ := habit.NewServer(&controller, localHostAddress)
 
-	if server.Tracker == nil {
+	if server.Server == nil {
 		t.Errorf("Tracker should not be nil")
 	}
 }
 
 func TestNewServerWithNonDefaultAddress(t *testing.T) {
 	t.Parallel()
-	tmpFile := CreateTmpFile(t)
+	store := habit.OpenMemoryStore()
+	controller, _ := habit.NewController(&store)
 	want := "http://test.net:8080"
-	store := habit.NewFileStore(tmpFile.Name())
-	server := habit.NewServer(store, want)
+	server, _ := habit.NewServer(&controller, want)
 
 	got := server.Server.Addr
 	if want != got {
@@ -40,21 +38,38 @@ func TestNewServerWithNonDefaultAddress(t *testing.T) {
 	}
 
 }
+func TestNewServerReturnsErrorOnEmptyAddress(t *testing.T) {
+	t.Parallel()
+	store := habit.OpenMemoryStore()
+	controller, _ := habit.NewController(&store)
+	_, err := habit.NewServer(&controller, "")
+	if err == nil {
+		t.Error("want NewController to return error on nil store")
+	}
+}
+
+func TestNewServerReturnsErrorOnNilController(t *testing.T) {
+	t.Parallel()
+	_, err := habit.NewServer(nil, "http://test.net")
+	if err == nil {
+		t.Error("want NewController to return error on nil store")
+	}
+}
 
 func TestHabitHandlerReturnsHabit(t *testing.T) {
 	t.Parallel()
 	recorder := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/?habit=piano", nil)
-	tmpFile := CreateTmpFile(t)
-	store := habit.NewFileStore(tmpFile.Name())
-	server := habit.NewServer(store, localHostAddress)
-	server.Tracker = &habit.Tracker{
-		"reading": &habit.Habit{
-			Name: "reading",
-		},
-	}
 
-	server.HabitHandler(recorder, req)
+	store := habit.OpenMemoryStore()
+	store.Habits["piano"] = &habit.Habit{
+		Name: "piano",
+	}
+	controller, _ := habit.NewController(&store)
+	server, _ := habit.NewServer(&controller, localHostAddress)
+
+	handler := server.HandleIndex()
+	handler(recorder, req)
 	res := recorder.Result()
 	got, err := ioutil.ReadAll(res.Body)
 	if err != nil {
@@ -69,14 +84,18 @@ func TestHabitHandlerReturnsHabit(t *testing.T) {
 	}
 }
 
-func TestHabitHandlerWithGibberishReturns400(t *testing.T) {
+func TestHandleIndexWithGibberishReturns400(t *testing.T) {
 	t.Parallel()
 	recorder := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/?garbage", nil)
-	tmpFile := CreateTmpFile(t)
-	store := habit.NewFileStore(tmpFile.Name())
-	server := habit.NewServer(store, localHostAddress)
-	server.HabitHandler(recorder, req)
+
+	store := habit.OpenMemoryStore()
+	controller, _ := habit.NewController(&store)
+	server, _ := habit.NewServer(&controller, localHostAddress)
+
+	handler := server.HandleIndex()
+	handler(recorder, req)
+
 	res := recorder.Result()
 	defer res.Body.Close()
 
@@ -85,25 +104,26 @@ func TestHabitHandlerWithGibberishReturns400(t *testing.T) {
 	}
 }
 
-func TestServer_HabitHandleInterval(t *testing.T) {
+func TestServer_HabitHandleFrequency(t *testing.T) {
 	t.Parallel()
-	tmpFile := CreateTmpFile(t)
-	store := habit.NewFileStore(tmpFile.Name())
-	server := habit.NewServer(store, localHostAddress)
+	store := habit.OpenMemoryStore()
+	controller, _ := habit.NewController(&store)
+	server, _ := habit.NewServer(&controller, localHostAddress)
 
 	testCases := []struct {
 		name   string
 		target string
 		want   int
 	}{
-		{"BadRequest on invalid interval", "/?habit=piano&interval=wrong", http.StatusBadRequest},
-		{"OK on valid interval", "/?habit=piano&interval=weekly", http.StatusOK},
+		{"BadRequest on invalid frequency", "/?habit=piano&frequency=wrong", http.StatusBadRequest},
+		{"OK on valid frequency", "/?habit=piano&frequency=weekly", http.StatusOK},
 	}
 
 	for _, tc := range testCases {
 		recorder := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, tc.target, nil)
-		server.HabitHandler(recorder, req)
+		handler := server.HandleIndex()
+		handler(recorder, req)
 		res := recorder.Result()
 		got := res.StatusCode
 		if tc.want != got {
@@ -112,25 +132,51 @@ func TestServer_HabitHandleInterval(t *testing.T) {
 	}
 }
 
+func TestHandleAllReturnsAllHabits(t *testing.T) {
+	t.Parallel()
+	recorder := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/all", nil)
+
+	store := habit.OpenMemoryStore()
+	store.Habits = map[string]*habit.Habit{
+		"piano":   {Name: "piano"},
+		"reading": {Name: "reading"},
+	}
+	controller, _ := habit.NewController(&store)
+	server, _ := habit.NewServer(&controller, localHostAddress)
+
+	handler := server.HandleAll()
+	handler(recorder, req)
+	res := recorder.Result()
+	got, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		t.Errorf("couldn't read response:%v", err)
+	}
+	if res.StatusCode != http.StatusOK {
+		t.Errorf("expected status 200 OK, got: %d", res.StatusCode)
+	}
+	want := "piano"
+	if !strings.Contains(string(got), want) {
+		t.Errorf("expected habit '%s', got:\n%s", want, got)
+	}
+}
+
 func TestRouting(t *testing.T) {
 	t.Parallel()
-	tracker := habit.Tracker{
-		"piano": &habit.Habit{
-			Name:    "piano",
-			Streak:  8,
-			DueDate: time.Now().Add(habit.DailyInterval),
-		},
+	store := habit.OpenMemoryStore()
+	store.Habits = map[string]*habit.Habit{
+		"piano":   {Name: "piano"},
+		"reading": {Name: "reading"},
 	}
-	store := habit.FileStore{Tracker: tracker}
-	habitServer := habit.NewServer(store, localHostAddress)
-	testServer := httptest.NewServer(habitServer.Router())
+	controller, _ := habit.NewController(&store)
+	habitServer, _ := habit.NewServer(&controller, localHostAddress)
+	testServer := httptest.NewServer(habitServer.Routes())
 	defer testServer.Close()
-
 	testCases := []struct {
 		path           string
 		wantStatusCode int
 	}{
-		{path: "/", wantStatusCode: http.StatusOK},
+		{path: "/", wantStatusCode: http.StatusBadRequest},
 		{path: "/all", wantStatusCode: http.StatusOK},
 		{path: "/?habit=piano", wantStatusCode: http.StatusOK},
 		{path: "/piano", wantStatusCode: http.StatusBadRequest},
