@@ -126,7 +126,7 @@ func TestController_AllHabits(t *testing.T) {
 		want  string
 	}{
 		{store: habit.MemoryStore{Habits: map[string]*habit.Habit{}}, want: "no habits have been started"},
-		{store: habit.MemoryStore{Habits: map[string]*habit.Habit{"piano": &habit.Habit{Name: "piano"}}}, want: "piano"},
+		{store: habit.MemoryStore{Habits: map[string]*habit.Habit{"piano": {Name: "piano"}}}, want: "piano"},
 	}
 
 	for _, tc := range testCases {
@@ -134,39 +134,6 @@ func TestController_AllHabits(t *testing.T) {
 		got := controller.GetAllHabits()
 		if !strings.Contains(got, tc.want) {
 			t.Errorf("want output to contain %s, got:\n    %s", tc.want, got)
-		}
-	}
-}
-func TestParseHabitErrors(t *testing.T) {
-	t.Parallel()
-	testCases := []struct {
-		testName, habitName, frequency string
-	}{
-		{testName: "empty habit name", habitName: "", frequency: "daily"},
-		{testName: "empty frequency", habitName: "surfing", frequency: ""},
-		{testName: "unknown frequency", habitName: "surfing", frequency: "blah"},
-	}
-	for _, tc := range testCases {
-		_, err := habit.ParseHabit(tc.habitName, tc.frequency)
-		if err == nil {
-			t.Errorf("expect ParseHabit to return error on %s", tc.testName)
-		}
-	}
-}
-
-func TestParseHabit(t *testing.T) {
-	t.Parallel()
-	testCases := []struct {
-		habitName, frequency string
-		wantedFrequency      time.Duration
-	}{
-		{habitName: "piano", frequency: "daily", wantedFrequency: habit.DailyInterval},
-		{habitName: "piano", frequency: "weekly", wantedFrequency: habit.WeeklyInterval},
-	}
-	for _, tc := range testCases {
-		h, _ := habit.ParseHabit(tc.habitName, tc.frequency)
-		if h.Name != tc.habitName || h.Frequency != tc.wantedFrequency {
-			t.Errorf("want habit name to be %s. Got %s\n want frequency to be %s. Got:%d", tc.habitName, h.Name, tc.frequency, h.Frequency)
 		}
 	}
 }

@@ -111,8 +111,8 @@ func TestMemoryStore_AllHabitsReturnsSliceOfHabits(t *testing.T) {
 	t.Parallel()
 	store := habit.OpenMemoryStore()
 	store.Habits = map[string]*habit.Habit{
-		"piano":   &habit.Habit{Name: "piano"},
-		"surfing": &habit.Habit{Name: "surfing"},
+		"piano":   {Name: "piano"},
+		"surfing": {Name: "surfing"},
 	}
 
 	allHabits := store.GetAllHabits()
@@ -195,9 +195,9 @@ func TestOpenDBStoreErrorsOnEmptyDBSource(t *testing.T) {
 func TestDBStore_CreateUpdateNilHabitFails(t *testing.T) {
 	t.Parallel()
 	dbSource := t.TempDir() + "test.db"
-	store, err := habit.OpenDBStore(dbSource)
+	store, _ := habit.OpenDBStore(dbSource)
 
-	err = store.Create(nil)
+	err := store.Create(nil)
 
 	if err == nil {
 		t.Error("want Store.create nil habit to fail with error")
@@ -292,8 +292,8 @@ func TestDBStore_AllHabits(t *testing.T) {
 		t.Fatal(err)
 	}
 	habits := []*habit.Habit{
-		&habit.Habit{Name: "piano"},
-		&habit.Habit{Name: "surfing"},
+		{Name: "piano"},
+		{Name: "surfing"},
 	}
 
 	for _, h := range habits {
@@ -329,8 +329,8 @@ func TestOpenFileStoreErrorsOnEmptyFilename(t *testing.T) {
 func TestFileStore_CreateUpdateNilHabitFails(t *testing.T) {
 	t.Parallel()
 	filename := t.TempDir() + ".habitTracker"
-	store, err := habit.OpenFileStore(filename)
-	err = store.Create(nil)
+	store, _ := habit.OpenFileStore(filename)
+	err := store.Create(nil)
 	if err == nil {
 		t.Error("want Store.create nil habit to fail with error")
 	}
@@ -441,8 +441,8 @@ func TestFileStore_AllHabitsReturnsSliceOfHabits(t *testing.T) {
 	}
 
 	habits := []*habit.Habit{
-		&habit.Habit{Name: "piano"},
-		&habit.Habit{Name: "surfing"},
+		{Name: "piano"},
+		{Name: "surfing"},
 	}
 
 	for _, h := range habits {

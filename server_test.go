@@ -11,7 +11,6 @@ import (
 
 const (
 	localHostAddress = "127.0.0.1"
-	notFound         = "not found"
 )
 
 func TestNewHttpServer(t *testing.T) {
@@ -140,8 +139,8 @@ func TestHandleAllReturnsAllHabits(t *testing.T) {
 
 	store := habit.OpenMemoryStore()
 	store.Habits = map[string]*habit.Habit{
-		"piano":   &habit.Habit{Name: "piano"},
-		"reading": &habit.Habit{Name: "reading"},
+		"piano":   {Name: "piano"},
+		"reading": {Name: "reading"},
 	}
 	controller, _ := habit.NewController(&store)
 	server, _ := habit.NewServer(&controller, localHostAddress)
@@ -166,8 +165,8 @@ func TestRouting(t *testing.T) {
 	t.Parallel()
 	store := habit.OpenMemoryStore()
 	store.Habits = map[string]*habit.Habit{
-		"piano":   &habit.Habit{Name: "piano"},
-		"reading": &habit.Habit{Name: "reading"},
+		"piano":   {Name: "piano"},
+		"reading": {Name: "reading"},
 	}
 	controller, _ := habit.NewController(&store)
 	habitServer, _ := habit.NewServer(&controller, localHostAddress)

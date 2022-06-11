@@ -7,12 +7,9 @@ import (
 )
 
 const (
-	NewMessage MessageKind = iota
-	RepeatMessage
-	StreakMessage
-	BrokenMessage
-
-	DailyInterval  = 24 * time.Hour
+	//DailyInterval a constant representing a time.Duration of a day
+	DailyInterval = 24 * time.Hour
+	//WeeklyInterval a constant representing a time.Duration of a week
 	WeeklyInterval = 7 * 24 * time.Hour
 
 	newHabit      = "Good luck with your new habit '%s'! Don't forget to do it again %s."
@@ -20,12 +17,19 @@ const (
 	repeatedHabit = "You already logged '%s' today. Keep it up!"
 	brokeStreak   = "You last did the habit '%s' %.0f %s ago, so you're starting a new streak today. Good luck!"
 	habitStatus   = "You're currently on a %d-day streak for '%s'. Stick to it!"
+
+	NewMessage MessageKind = iota
+	RepeatMessage
+	StreakMessage
+	BrokenMessage
 )
 
+//Controller enforces business logic on Habits
 type Controller struct {
 	Store Store
 }
 
+//NewController returns a new Controller which uses the given store
 func NewController(store Store) (Controller, error) {
 	if store == nil {
 		return Controller{}, errors.New("store cannot be nil")
@@ -33,9 +37,10 @@ func NewController(store Store) (Controller, error) {
 	return Controller{Store: store}, nil
 }
 
+//Handle Creates, Delete, or Updates the provided habit based on the status
 func (c Controller) Handle(input *Habit) (*Habit, error) {
 	if input == nil {
-		return nil, NilHabitError
+		return nil, ErrNilHabit
 	}
 
 	if input.Name == "" {
@@ -55,7 +60,7 @@ func (c Controller) Handle(input *Habit) (*Habit, error) {
 		return h, nil
 	}
 
-	if !validInterval[input.Frequency] {
+	if input.Frequency != DailyInterval && input.Frequency != WeeklyInterval {
 		return nil, errors.New("invalid interval")
 	}
 	input.Streak = 0
@@ -69,6 +74,7 @@ func (c Controller) Handle(input *Habit) (*Habit, error) {
 	return input, nil
 }
 
+//GetAllHabits wraps Store.GetAllHabits and returns a string representation of the existing habits
 func (c Controller) GetAllHabits() string {
 	allHabits := c.Store.GetAllHabits()
 	if len(allHabits) == 0 {
@@ -81,7 +87,18 @@ func (c Controller) GetAllHabits() string {
 	return message
 }
 
-func ParseHabit(name, frequency string) (*Habit, error) {
+//MessageKind represents the message to be displayed
+type MessageKind int
+
+// SameDay returns true if the days are the same ignoring hours, minutes,etc
+func SameDay(d1, d2 time.Time) bool {
+	if d1.Year() == d2.Year() && d1.Month() == d2.Month() && d1.Day() == d2.Day() {
+		return true
+	}
+	return false
+}
+
+func parseHabit(name, frequency string) (*Habit, error) {
 	if name == "" {
 		return nil, errors.New("habit testName cannot be empty")
 	}
@@ -152,20 +169,4 @@ func (h *Habit) GenerateMessage(kind MessageKind) {
 		}
 		h.Message = fmt.Sprintf(brokeStreak, h.Name, sinceDays, intervalString)
 	}
-}
-
-//MessageKind represents the message to be displayed
-type MessageKind int
-
-// SameDay returns true if the days are the same ignoring hours, minutes,etc
-func SameDay(d1, d2 time.Time) bool {
-	if d1.Year() == d2.Year() && d1.Month() == d2.Month() && d1.Day() == d2.Day() {
-		return true
-	}
-	return false
-}
-
-var validInterval = map[time.Duration]bool{
-	DailyInterval:  true,
-	WeeklyInterval: true,
 }

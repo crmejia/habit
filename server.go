@@ -7,10 +7,6 @@ import (
 	"net/http"
 )
 
-const (
-	defaultTCPAddress = "127.0.0.1:8080"
-)
-
 type server struct {
 	*http.Server
 	controller *Controller
@@ -68,7 +64,7 @@ func (server *server) HandleIndex() http.HandlerFunc {
 			frequency = "daily" //default frequency
 		}
 
-		inputHabit, err := ParseHabit(habitName, frequency)
+		inputHabit, err := parseHabit(habitName, frequency)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return

@@ -4,12 +4,14 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	//SQLite driver package
 	_ "github.com/mattn/go-sqlite3"
 	"io/ioutil"
 	"os"
 	"time"
 )
 
+//Habit a type representing a habit
 type Habit struct {
 	Name      string
 	Streak    int
@@ -18,6 +20,7 @@ type Habit struct {
 	Message   string
 }
 
+//Store is an interface that captures the behavior of a Store
 type Store interface {
 	Get(name string) (*Habit, error)
 	Create(habit *Habit) error
@@ -25,13 +28,12 @@ type Store interface {
 	GetAllHabits() []*Habit
 }
 
+//MemoryStore is a type representing an in-memory store
 type MemoryStore struct {
 	Habits map[string]*Habit
 }
 
-var NilHabitError = errors.New("habit cannot be nil")
-
-//OpenMemoryStore returns Memory store. Note that other types reuturn the interface Store
+//OpenMemoryStore returns a new MemoryStore. Note that other types returns the interface Store
 func OpenMemoryStore() MemoryStore {
 	//here a file store or a db store would get the data from persistence.
 	memoryStore := MemoryStore{
@@ -40,6 +42,7 @@ func OpenMemoryStore() MemoryStore {
 	return memoryStore
 }
 
+//Get searches Store by name and returns the habit if it exists
 func (s *MemoryStore) Get(name string) (*Habit, error) {
 	habit, ok := s.Habits[name]
 	if ok {
@@ -48,9 +51,10 @@ func (s *MemoryStore) Get(name string) (*Habit, error) {
 	return nil, nil
 }
 
+//Create inserts the given habit into the store. It returns an error if the habit already exists
 func (s *MemoryStore) Create(habit *Habit) error {
 	if habit == nil {
-		return NilHabitError
+		return ErrNilHabit
 	}
 
 	if _, ok := s.Habits[habit.Name]; ok {
@@ -60,9 +64,10 @@ func (s *MemoryStore) Create(habit *Habit) error {
 	return nil
 }
 
+//Update updates the given habit. It returns an error if the habit does not exist
 func (s *MemoryStore) Update(habit *Habit) error {
 	if habit == nil {
-		return NilHabitError
+		return ErrNilHabit
 	}
 
 	if _, ok := s.Habits[habit.Name]; !ok {
@@ -73,6 +78,7 @@ func (s *MemoryStore) Update(habit *Habit) error {
 	return nil
 }
 
+//GetAllHabits returns a []*Habits of all the stored habits
 func (s MemoryStore) GetAllHabits() []*Habit {
 	allHabits := make([]*Habit, 0, len(s.Habits))
 	for _, h := range s.Habits {
@@ -81,12 +87,13 @@ func (s MemoryStore) GetAllHabits() []*Habit {
 	return allHabits
 }
 
-//DBStore represents a store backed by a SQLite DB
+//DBStore is a type that wraps a SQLite DB
 type DBStore struct {
 	db *sql.DB
 }
 
-//OpenDBStore opens a DBStore
+//OpenDBStore opens a connection to the specified dbSource. It takes care of creating a habit table if it does not
+//exist.
 func OpenDBStore(dbSource string) (Store, error) {
 	if dbSource == "" {
 		return &DBStore{}, errors.New("empty dbSource string")
@@ -111,6 +118,7 @@ duedate TEXT NOT NULL );`
 	return &DBStore{db: db}, nil
 }
 
+//Get queries DBStore by name and returns the habit if it exists
 func (s *DBStore) Get(name string) (*Habit, error) {
 	const getHabit = `
 SELECT name, streak, frequency, duedate FROM habit WHERE name = ?
@@ -152,9 +160,10 @@ SELECT name, streak, frequency, duedate FROM habit WHERE name = ?
 	return &h, nil
 }
 
+//Create inserts the given habit into the store. It returns an error if the habit already exists
 func (s *DBStore) Create(h *Habit) error {
 	if h == nil {
-		return NilHabitError
+		return ErrNilHabit
 	}
 	const insertHabit = `
 INSERT INTO habit(name,streak,frequency,duedate) VALUES(?,?,?,?)
@@ -170,9 +179,10 @@ INSERT INTO habit(name,streak,frequency,duedate) VALUES(?,?,?,?)
 	return nil
 }
 
+//Update updates the given habit. It returns an error if the habit does not exist
 func (s *DBStore) Update(h *Habit) error {
 	if h == nil {
-		return NilHabitError
+		return ErrNilHabit
 	}
 	const updateHabit = `
 UPDATE habit SET streak = ?, frequency = ?, duedate = ? WHERE NAME = ?
@@ -187,6 +197,8 @@ UPDATE habit SET streak = ?, frequency = ?, duedate = ? WHERE NAME = ?
 	}
 	return nil
 }
+
+//GetAllHabits returns a []*Habits of all the stored habits
 func (s *DBStore) GetAllHabits() []*Habit {
 
 	const getAllHabits = `
@@ -228,11 +240,14 @@ SELECT name, streak, frequency, duedate FROM habit
 	return habits
 }
 
+//FileStore is a type that wraps a JSON encoded file store
 type FileStore struct {
 	filename string
 	habits   map[string]*Habit
 }
 
+//OpenFileStore reads the specified file and decodes its content into an unexported map[string]*Habit. It takes care of
+//creating a new file if it does not exist.
 func OpenFileStore(filename string) (Store, error) {
 	file, err := os.OpenFile(filename, os.O_CREATE|os.O_RDWR, 0600)
 	if err != nil {
@@ -259,6 +274,7 @@ func OpenFileStore(filename string) (Store, error) {
 	return &fileStore, nil
 }
 
+//Get searches FileStore by name and returns the habit if it exists
 func (s *FileStore) Get(name string) (*Habit, error) {
 	habit, ok := s.habits[name]
 	if ok {
@@ -267,16 +283,18 @@ func (s *FileStore) Get(name string) (*Habit, error) {
 	return nil, nil
 }
 
+//Create inserts the given habit into the store. It returns an error if the habit already exists. It triggers
+//file io operations.
 func (s *FileStore) Create(habit *Habit) error {
 	if habit == nil {
-		return NilHabitError
+		return ErrNilHabit
 	}
 
 	if _, ok := s.habits[habit.Name]; ok {
 		return errors.New("habit already exists")
 	}
 	s.habits[habit.Name] = habit
-	err := WriteHabitsToFile(s.filename, s.habits)
+	err := writeHabitsToFile(s.filename, s.habits)
 	if err != nil {
 		return err
 	}
@@ -285,9 +303,10 @@ func (s *FileStore) Create(habit *Habit) error {
 
 }
 
+//Update updates the given habit. It returns an error if the habit does not exist. It triggers file io operations.
 func (s *FileStore) Update(habit *Habit) error {
 	if habit == nil {
-		return NilHabitError
+		return ErrNilHabit
 	}
 
 	if _, ok := s.habits[habit.Name]; !ok {
@@ -295,11 +314,20 @@ func (s *FileStore) Update(habit *Habit) error {
 	}
 
 	s.habits[habit.Name] = habit
-	err := WriteHabitsToFile(s.filename, s.habits)
+	err := writeHabitsToFile(s.filename, s.habits)
 	return err
 }
 
-func WriteHabitsToFile(filename string, habits map[string]*Habit) error {
+//GetAllHabits returns a []*Habits of all the stored habit
+func (s *FileStore) GetAllHabits() []*Habit {
+	allHabits := make([]*Habit, 0, len(s.habits))
+	for _, h := range s.habits {
+		allHabits = append(allHabits, h)
+	}
+	return allHabits
+}
+
+func writeHabitsToFile(filename string, habits map[string]*Habit) error {
 	file, err := os.OpenFile(filename, os.O_CREATE|os.O_RDWR, 0600)
 	if err != nil {
 		return err
@@ -316,10 +344,5 @@ func WriteHabitsToFile(filename string, habits map[string]*Habit) error {
 	return err
 }
 
-func (s *FileStore) GetAllHabits() []*Habit {
-	allHabits := make([]*Habit, 0, len(s.habits))
-	for _, h := range s.habits {
-		allHabits = append(allHabits, h)
-	}
-	return allHabits
-}
+//ErrNilHabit is returned when a habit is nil
+var ErrNilHabit = errors.New("habit cannot be nil")

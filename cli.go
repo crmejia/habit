@@ -7,7 +7,7 @@ import (
 	"io"
 )
 
-//RunCLI parses arguments and runs habit tracker
+//RunCLI parses arguments and passes them to habit.Controller]
 func RunCLI(args []string, output io.Writer) {
 	flagSet := flag.NewFlagSet("habit", flag.ContinueOnError)
 	flagSet.SetOutput(output)
@@ -45,20 +45,25 @@ Option Flags:`)
 		return
 	}
 
-	store, err := StoreFactory(*storeType, *storeDir)
+	store, err := storeFactory(*storeType, *storeDir)
 	if err != nil {
 		fmt.Fprintln(output, err)
 		flagSet.Usage()
 		return
 	}
 	controller, err := NewController(*store)
+	if err != nil {
+		fmt.Fprintln(output, err)
+		flagSet.Usage()
+		return
+	}
 
 	if flagSet.Args()[0] == "all" {
 		fmt.Fprint(output, controller.GetAllHabits())
 		return
 	}
 
-	h, err := ParseHabit(flagSet.Args()[0], *frequency)
+	h, err := parseHabit(flagSet.Args()[0], *frequency)
 	if err != nil {
 		fmt.Fprintln(output, err)
 		flagSet.Usage()
@@ -71,11 +76,9 @@ Option Flags:`)
 		return
 	}
 	fmt.Fprintln(output, h)
-
-	return
 }
 
-func StoreFactory(storeType string, dir string) (*Store, error) {
+func storeFactory(storeType string, dir string) (*Store, error) {
 	var opener func(string) (Store, error)
 	var source string
 	switch storeType {
@@ -86,7 +89,7 @@ func StoreFactory(storeType string, dir string) (*Store, error) {
 		opener = OpenFileStore
 		source = dir + "/.habitTracker"
 	default:
-		return nil, fmt.Errorf("unknown store type %s\n", storeType)
+		return nil, fmt.Errorf("unknown store type %s", storeType)
 	}
 	store, err := opener(source)
 	if err != nil {
