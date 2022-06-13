@@ -1,7 +1,7 @@
 package main
 
 import (
-	"habit"
+	"github.com/crmejia/habit"
 	"os"
 )
 
