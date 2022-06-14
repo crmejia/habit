@@ -20,13 +20,13 @@ Option Flags:`)
 		flagSet.PrintDefaults()
 	}
 
-	frequency := flagSet.String("f", "daily", "Set the frequency of the habit: daily(default), weekly.")
-	storeType := flagSet.String("s", "db", "Set the store backend for habit tracker: db(default), file")
+	frequency := flagSet.String("f", "daily", "Set the frequency of the habit: daily, weekly.")
+	storeType := flagSet.String("s", "db", "Set the store backend for habit tracker: db, file.")
 	homeDir, err := homedir.Dir()
 	if err != nil {
-		fmt.Println(err)
+		fmt.Fprintln(output, err)
 	}
-	storeDir := flagSet.String("d", homeDir, "Set the store directory. User's home directory is the default")
+	storeDir := flagSet.String("d", homeDir, "Set the store directory.")
 
 	err = flagSet.Parse(args)
 	if err != nil {

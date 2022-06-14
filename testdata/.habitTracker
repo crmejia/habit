@@ -1,0 +1,23 @@
+{
+  "piano": {
+    "Name": "piano",
+    "Streak": 0,
+    "DueDate": "2022-06-14T19:46:39.031735-05:00",
+    "Frequency": 86400000000000,
+    "Message": "Good luck with your new habit 'piano'! Don't forget to do it again tomorrow."
+  },
+  "reading": {
+    "Name": "reading",
+    "Streak": 0,
+    "DueDate": "2022-06-14T19:51:56.470473-05:00",
+    "Frequency": 86400000000000,
+    "Message": "Good luck with your new habit 'reading'! Don't forget to do it again tomorrow."
+  },
+  "surfing": {
+    "Name": "surfing",
+    "Streak": 0,
+    "DueDate": "2022-06-14T19:51:52.798801-05:00",
+    "Frequency": 86400000000000,
+    "Message": "Good luck with your new habit 'surfing'! Don't forget to do it again tomorrow."
+  }
+}

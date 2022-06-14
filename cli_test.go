@@ -18,9 +18,9 @@ func TestRunCLIShowsUsageHelpNoArgs(t *testing.T) {
 	}
 }
 
-func TestRunCLIAllShowsCorrectly(t *testing.T) {
+func TestRunCLIAllShowsCorrectlyOnChangedDir(t *testing.T) {
 	t.Parallel()
-	args := []string{"all"}
+	args := []string{"-d", "testdata/", "-s", "file", "all"}
 	buffer := bytes.Buffer{}
 	habit.RunCLI(args, &buffer)
 
@@ -28,7 +28,7 @@ func TestRunCLIAllShowsCorrectly(t *testing.T) {
 	got := buffer.String()
 	if !strings.Contains(got, want) {
 		// if habits exist in store, a summary of all habits should be displayed
-		t.Errorf("habit all should print a summary of all habits got\n:  %s", got)
+		t.Errorf("habit all should print a summary of all habits got:  \n  %s", got)
 	}
 }
 
