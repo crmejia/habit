@@ -219,8 +219,14 @@ func TestServer_RunReturnsBadRequest(t *testing.T) {
 		t.Error(err)
 	}
 	go server.Run()
-	time.Sleep(2 * time.Second) //wait for server to get ready
 	resp, err := http.Get("http://" + address)
+	for err != nil {
+		time.Sleep(5 * time.Millisecond)
+		resp, err = http.Get("http://" + address)
+	}
+	if err != nil {
+		t.Fatal(err)
+	}
 	if err != nil {
 		t.Error(err)
 	}
@@ -255,8 +261,14 @@ func TestServer_RunReturnsHabit(t *testing.T) {
 		t.Error(err)
 	}
 	go server.Run()
-	time.Sleep(2 * time.Second) //wait for server to get ready
 	resp, err := http.Get("http://" + address + "?habit=piano")
+	for err != nil {
+		time.Sleep(5 * time.Millisecond)
+		resp, err = http.Get("http://" + address)
+	}
+	if err != nil {
+		t.Fatal(err)
+	}
 	if err != nil {
 		t.Error(err)
 	}
