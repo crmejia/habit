@@ -10,7 +10,10 @@ import (
 func TestMemoryStore_GetReturnsNilOnNoHabit(t *testing.T) {
 	t.Parallel()
 	store := habit.OpenMemoryStore()
-	got, _ := store.Get("piano")
+	got, err := store.Get("piano")
+	if err != nil {
+		t.Error(err)
+	}
 
 	if got != nil {
 		t.Error("want Store.Get to return nil")
@@ -22,7 +25,10 @@ func TestMemoryStore_GetReturnsExistingHabit(t *testing.T) {
 	store := habit.OpenMemoryStore()
 	store.Habits["piano"] = &habit.Habit{Name: "piano"}
 
-	h, _ := store.Get("piano")
+	h, err := store.Get("piano")
+	if err != nil {
+		t.Error(err)
+	}
 	if h == nil {
 		t.Fatal()
 	}
@@ -39,7 +45,10 @@ func TestMemoryStore_CreateNewHabit(t *testing.T) {
 	store := habit.OpenMemoryStore()
 	h := habit.Habit{Name: "piano"}
 
-	store.Create(&h)
+	err := store.Create(&h)
+	if err != nil {
+		t.Error(err)
+	}
 
 	if _, ok := store.Habits["piano"]; !ok {
 		t.Error("want h to be inserted into store")
@@ -80,7 +89,10 @@ func TestMemoryStore_UpdateHabit(t *testing.T) {
 	store.Habits["piano"] = oldHabit
 
 	updateHabit := &habit.Habit{Name: "piano"}
-	store.Update(updateHabit)
+	err := store.Update(updateHabit)
+	if err != nil {
+		t.Error(err)
+	}
 
 	if oldHabit == store.Habits["piano"] {
 		t.Error("want update to replace habit")
@@ -149,10 +161,16 @@ func TestMessageGenerator(t *testing.T) {
 func TestController_HandleSetsMessageCorrectlyForNewHabit(t *testing.T) {
 	t.Parallel()
 	store := habit.OpenMemoryStore()
-	controller, _ := habit.NewController(&store)
+	controller, err := habit.NewController(&store)
+	if err != nil {
+		t.Error(err)
+	}
 	h := &habit.Habit{Name: "piano",
 		Frequency: habit.DailyInterval}
-	controller.Handle(h)
+	_, err = controller.Handle(h)
+	if err != nil {
+		t.Error(err)
+	}
 
 	want := "Good luck with your new habit 'piano'! Don't forget to do it again tomorrow."
 	got := h.String()
@@ -171,11 +189,17 @@ func TestTracker_FetchHabitSetsMessageCorrectlyForStreakBrokenStreak(t *testing.
 		{want: "You last did the habit 'running' 10 days ago, so you're starting a new streak today. Good luck!", habit: &habit.Habit{Name: "running", Streak: 10, DueDate: time.Now().Add(-10 * 24 * time.Hour)}},
 	}
 	store := habit.OpenMemoryStore()
-	controller, _ := habit.NewController(&store)
+	controller, err := habit.NewController(&store)
+	if err != nil {
+		t.Error(err)
+	}
 	for _, tc := range testCases {
 
 		store.Habits[tc.habit.Name] = tc.habit
-		controller.Handle(tc.habit)
+		_, err := controller.Handle(tc.habit)
+		if err != nil {
+			t.Error(err)
+		}
 
 		got := tc.habit.String()
 		if tc.want != got {
@@ -195,9 +219,12 @@ func TestOpenDBStoreErrorsOnEmptyDBSource(t *testing.T) {
 func TestDBStore_CreateUpdateNilHabitFails(t *testing.T) {
 	t.Parallel()
 	dbSource := t.TempDir() + "test.db"
-	store, _ := habit.OpenDBStore(dbSource)
+	store, err := habit.OpenDBStore(dbSource)
+	if err != nil {
+		t.Error(err)
+	}
 
-	err := store.Create(nil)
+	err = store.Create(nil)
 
 	if err == nil {
 		t.Error("want Store.create nil habit to fail with error")
@@ -297,7 +324,10 @@ func TestDBStore_AllHabits(t *testing.T) {
 	}
 
 	for _, h := range habits {
-		dbStore.Create(h)
+		err := dbStore.Create(h)
+		if err != nil {
+			t.Error(err)
+		}
 	}
 
 	got := dbStore.GetAllHabits()
@@ -329,8 +359,11 @@ func TestOpenFileStoreErrorsOnEmptyFilename(t *testing.T) {
 func TestFileStore_CreateUpdateNilHabitFails(t *testing.T) {
 	t.Parallel()
 	filename := t.TempDir() + ".habitTracker"
-	store, _ := habit.OpenFileStore(filename)
-	err := store.Create(nil)
+	store, err := habit.OpenFileStore(filename)
+	if err != nil {
+		t.Error(err)
+	}
+	err = store.Create(nil)
 	if err == nil {
 		t.Error("want Store.create nil habit to fail with error")
 	}
@@ -446,7 +479,10 @@ func TestFileStore_AllHabitsReturnsSliceOfHabits(t *testing.T) {
 	}
 
 	for _, h := range habits {
-		fileStore.Create(h)
+		err := fileStore.Create(h)
+		if err != nil {
+			t.Error(err)
+		}
 	}
 
 	got := fileStore.GetAllHabits()

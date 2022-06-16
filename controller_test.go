@@ -10,7 +10,10 @@ import (
 func TestNewController(t *testing.T) {
 	t.Parallel()
 	store := habit.OpenMemoryStore()
-	controller, _ := habit.NewController(&store)
+	controller, err := habit.NewController(&store)
+	if err != nil {
+		t.Error(err)
+	}
 
 	if controller.Store == nil {
 		t.Errorf("controller.Store should be initialized by new")
@@ -28,8 +31,11 @@ func TestNewControllerReturnsErrorOnNilStore(t *testing.T) {
 func TestController_HandleReturnsErrorOnNilHabit(t *testing.T) {
 	t.Parallel()
 	store := habit.OpenMemoryStore()
-	controller, _ := habit.NewController(&store)
-	_, err := controller.Handle(nil)
+	controller, err := habit.NewController(&store)
+	if err != nil {
+		t.Error(err)
+	}
+	_, err = controller.Handle(nil)
 	if err == nil {
 		t.Error("expected err got nil")
 	}
@@ -38,9 +44,12 @@ func TestController_HandleReturnsErrorOnNilHabit(t *testing.T) {
 func TestController_HandleReturnsErrorOnEmptyHabitName(t *testing.T) {
 	t.Parallel()
 	store := habit.OpenMemoryStore()
-	controller, _ := habit.NewController(&store)
+	controller, err := habit.NewController(&store)
+	if err != nil {
+		t.Error(err)
+	}
 	h := habit.Habit{Name: ""}
-	_, err := controller.Handle(&h)
+	_, err = controller.Handle(&h)
 	if err == nil {
 		t.Error("expected err got nil")
 	}
@@ -54,7 +63,10 @@ func TestController_HandleUpdatesStreaksDueDateCorrectly(t *testing.T) {
 	store := habit.MemoryStore{
 		Habits: map[string]*habit.Habit{"piano": &inputHabit},
 	}
-	controller, _ := habit.NewController(&store)
+	controller, err := habit.NewController(&store)
+	if err != nil {
+		t.Error(err)
+	}
 	testCases := []struct {
 		name          string
 		streak        int
@@ -76,7 +88,10 @@ func TestController_HandleUpdatesStreaksDueDateCorrectly(t *testing.T) {
 		inputHabit.DueDate = tc.dueDate
 		inputHabit.Frequency = tc.interval
 
-		h, _ := controller.Handle(&inputHabit)
+		h, err := controller.Handle(&inputHabit)
+		if err != nil {
+			t.Error(err)
+		}
 
 		if h.Name != "piano" {
 			t.Errorf("wantedStreak piano to be the habit's testName got %s", h.Name)

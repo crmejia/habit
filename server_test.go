@@ -93,17 +93,26 @@ func TestHandleIndexWithGibberishReturns400(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/?garbage", nil)
 
 	store := habit.OpenMemoryStore()
-	controller, _ := habit.NewController(&store)
-	server, _ := habit.NewServer(&controller, localHostAddress)
+	controller, err := habit.NewController(&store)
+	if err != nil {
+		t.Error(err)
+	}
 
+	server, err := habit.NewServer(&controller, localHostAddress)
+	if err != nil {
+		t.Error(err)
+	}
 	handler := server.HandleIndex()
 	handler(recorder, req)
 
 	res := recorder.Result()
-	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusBadRequest {
 		t.Errorf("want status code %d, got %d", http.StatusBadRequest, res.StatusCode)
+	}
+	err = res.Body.Close()
+	if err != nil {
+		t.Error(err)
 	}
 }
 
@@ -197,7 +206,10 @@ func TestRouting(t *testing.T) {
 		if tc.wantStatusCode != got {
 			t.Errorf("want status %d for path:%s, got %d", tc.wantStatusCode, tc.path, got)
 		}
-		res.Body.Close() //no defer at it might leak ;)
+		err = res.Body.Close()
+		if err != nil {
+			t.Error(err)
+		} //no defer at it might leak ;)
 	}
 }
 
