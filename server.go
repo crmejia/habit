@@ -40,6 +40,10 @@ func (server *server) Run() {
 	}
 }
 
+func (server *server) Running() {
+	server.
+}
+
 //Routes returns a http.Handler with the appropriate routes
 func (server *server) Routes() http.Handler {
 	router := http.NewServeMux()

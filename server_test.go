@@ -1,12 +1,15 @@
 package habit_test
 
 import (
+	"fmt"
 	"github.com/crmejia/habit"
+	"github.com/phayes/freeport"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 )
 
 const (
@@ -195,5 +198,78 @@ func TestRouting(t *testing.T) {
 			t.Errorf("want status %d for path:%s, got %d", tc.wantStatusCode, tc.path, got)
 		}
 		res.Body.Close() //no defer at it might leak ;)
+	}
+}
+
+func TestServer_RunReturnsBadRequest(t *testing.T) {
+	t.Parallel()
+	store := habit.OpenMemoryStore()
+	controller, err := habit.NewController(&store)
+	if err != nil {
+		t.Error(err)
+	}
+
+	freePort, err := freeport.GetFreePort()
+	if err != nil {
+		t.Fatal(err)
+	}
+	address := fmt.Sprintf("%s:%d", localHostAddress, freePort)
+	server, err := habit.NewServer(&controller, address)
+	if err != nil {
+		t.Error(err)
+	}
+	go server.Run()
+	time.Sleep(2 * time.Second) //wait for server to get ready
+	resp, err := http.Get("http://" + address)
+	if err != nil {
+		t.Error(err)
+	}
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Errorf("Want Status %d, got: %d", http.StatusNotFound, resp.StatusCode)
+	}
+
+	want := "cannot parse querystring"
+	got, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Errorf("Not able to parse response")
+	}
+	if !strings.Contains(string(got), want) {
+		t.Errorf("want response body to be:\n %s \ngot:\n %s", want, got)
+	}
+}
+func TestServer_RunReturnsHabit(t *testing.T) {
+	t.Parallel()
+	store := habit.OpenMemoryStore()
+	controller, err := habit.NewController(&store)
+	if err != nil {
+		t.Error(err)
+	}
+
+	freePort, err := freeport.GetFreePort()
+	if err != nil {
+		t.Fatal(err)
+	}
+	address := fmt.Sprintf("%s:%d", localHostAddress, freePort)
+	server, err := habit.NewServer(&controller, address)
+	if err != nil {
+		t.Error(err)
+	}
+	go server.Run()
+	time.Sleep(2 * time.Second) //wait for server to get ready
+	resp, err := http.Get("http://" + address + "?habit=piano")
+	if err != nil {
+		t.Error(err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("Want Status %d, got: %d", http.StatusNotFound, resp.StatusCode)
+	}
+
+	want := "piano"
+	got, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Errorf("Not able to parse response")
+	}
+	if !strings.Contains(string(got), want) {
+		t.Errorf("want response body to be:\n %s \ngot:\n %s", want, got)
 	}
 }
