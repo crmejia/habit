@@ -7,7 +7,7 @@ import (
 	"io"
 )
 
-//RunCLI parses arguments and passes them to habit.Controller]
+//RunCLI parses arguments and passes them to habit.Controller
 func RunCLI(args []string, output io.Writer) {
 	flagSet := flag.NewFlagSet("habit", flag.ContinueOnError)
 	flagSet.SetOutput(output)

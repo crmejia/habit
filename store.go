@@ -338,8 +338,14 @@ func writeHabitsToFile(filename string, habits map[string]*Habit) error {
 	if err != nil {
 		return err
 	}
-	file.Truncate(0)
-	file.Seek(0, 0)
+	err = file.Truncate(0)
+	if err != nil {
+		return err
+	}
+	_, err = file.Seek(0, 0)
+	if err != nil {
+		return err
+	}
 	_, err = file.Write(fileBytes)
 	return err
 }
