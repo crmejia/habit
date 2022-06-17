@@ -95,12 +95,12 @@ func TestHandleIndexWithGibberishReturns400(t *testing.T) {
 	store := habit.OpenMemoryStore()
 	controller, err := habit.NewController(&store)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 
 	server, err := habit.NewServer(&controller, localHostAddress)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 	handler := server.HandleIndex()
 	handler(recorder, req)
@@ -112,7 +112,7 @@ func TestHandleIndexWithGibberishReturns400(t *testing.T) {
 	}
 	err = res.Body.Close()
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 }
 
@@ -208,7 +208,7 @@ func TestRouting(t *testing.T) {
 		}
 		err = res.Body.Close()
 		if err != nil {
-			t.Error(err)
+			t.Fatal(err)
 		} //no defer at it might leak ;)
 	}
 }
@@ -218,7 +218,7 @@ func TestServer_RunReturnsBadRequest(t *testing.T) {
 	store := habit.OpenMemoryStore()
 	controller, err := habit.NewController(&store)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 
 	freePort, err := freeport.GetFreePort()
@@ -228,7 +228,7 @@ func TestServer_RunReturnsBadRequest(t *testing.T) {
 	address := fmt.Sprintf("%s:%d", localHostAddress, freePort)
 	server, err := habit.NewServer(&controller, address)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 	go server.Run()
 	resp, err := http.Get("http://" + address)
@@ -240,7 +240,7 @@ func TestServer_RunReturnsBadRequest(t *testing.T) {
 		t.Fatal(err)
 	}
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 	if resp.StatusCode != http.StatusBadRequest {
 		t.Errorf("Want Status %d, got: %d", http.StatusNotFound, resp.StatusCode)
@@ -260,7 +260,7 @@ func TestServer_RunReturnsHabit(t *testing.T) {
 	store := habit.OpenMemoryStore()
 	controller, err := habit.NewController(&store)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 
 	freePort, err := freeport.GetFreePort()
@@ -270,7 +270,7 @@ func TestServer_RunReturnsHabit(t *testing.T) {
 	address := fmt.Sprintf("%s:%d", localHostAddress, freePort)
 	server, err := habit.NewServer(&controller, address)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 	go server.Run()
 	resp, err := http.Get("http://" + address + "?habit=piano")
@@ -282,7 +282,7 @@ func TestServer_RunReturnsHabit(t *testing.T) {
 		t.Fatal(err)
 	}
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("Want Status %d, got: %d", http.StatusNotFound, resp.StatusCode)

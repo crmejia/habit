@@ -12,7 +12,7 @@ func TestNewController(t *testing.T) {
 	store := habit.OpenMemoryStore()
 	controller, err := habit.NewController(&store)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 
 	if controller.Store == nil {
@@ -33,7 +33,7 @@ func TestController_HandleReturnsErrorOnNilHabit(t *testing.T) {
 	store := habit.OpenMemoryStore()
 	controller, err := habit.NewController(&store)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 	_, err = controller.Handle(nil)
 	if err == nil {
@@ -46,7 +46,7 @@ func TestController_HandleReturnsErrorOnEmptyHabitName(t *testing.T) {
 	store := habit.OpenMemoryStore()
 	controller, err := habit.NewController(&store)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 	h := habit.Habit{Name: ""}
 	_, err = controller.Handle(&h)
@@ -65,7 +65,7 @@ func TestController_HandleUpdatesStreaksDueDateCorrectly(t *testing.T) {
 	}
 	controller, err := habit.NewController(&store)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 	testCases := []struct {
 		name          string
@@ -90,7 +90,7 @@ func TestController_HandleUpdatesStreaksDueDateCorrectly(t *testing.T) {
 
 		h, err := controller.Handle(&inputHabit)
 		if err != nil {
-			t.Error(err)
+			t.Fatal(err)
 		}
 
 		if h.Name != "piano" {
@@ -130,7 +130,7 @@ func TestController_HandleCreatesHabit(t *testing.T) {
 	}
 
 	if store.Habits["piano"] == nil {
-		t.Error("want new habit to be inserted into store")
+		t.Errorf("want new habit to be inserted into store")
 	}
 }
 
