@@ -79,6 +79,7 @@ Option Flags:`)
 	fmt.Fprintln(output, h)
 }
 
+//RunServer parses args and starts HTTP habit server on provided address
 func RunServer(args []string, output io.Writer) {
 	if len(args) == 0 {
 		fmt.Fprintln(output, "no address provided")

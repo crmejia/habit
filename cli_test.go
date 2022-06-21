@@ -155,7 +155,7 @@ func TestRunServerShowsErrorOnWrongArgs(t *testing.T) {
 	for _, tc := range testCases {
 		got := bytes.Buffer{}
 		habit.RunServer(tc.args, &got)
-		if got.String() != tc.want {
+		if !strings.Contains(got.String(), tc.want) {
 			t.Errorf("%s should fail with %s, got: %s", tc.name, noAddressError, got.String())
 		}
 	}
@@ -163,6 +163,9 @@ func TestRunServerShowsErrorOnWrongArgs(t *testing.T) {
 func TestRunServerStartsServer(t *testing.T) {
 	t.Parallel()
 	freePort, err := freeport.GetFreePort()
+	if err != nil {
+		t.Fatal(err)
+	}
 	address := fmt.Sprintf("%s:%d", localHostAddress, freePort)
 	args := []string{address}
 	output := bytes.Buffer{}
@@ -190,7 +193,6 @@ func retryHttpGet(address string) (*http.Response, error) {
 	resp, err := http.Get(address)
 	for err != nil {
 		switch {
-		//todo identify correct error or maybe http response code? since it's unavailable API
 		case strings.Contains(err.Error(), "connection refused"):
 			time.Sleep(5 * time.Millisecond)
 			resp, err = http.Get(address)
