@@ -3,6 +3,7 @@ package habit
 import (
 	"flag"
 	"fmt"
+
 	"github.com/mitchellh/go-homedir"
 	"io"
 )
@@ -59,7 +60,7 @@ Option Flags:`)
 	}
 
 	if flagSet.Args()[0] == "all" {
-		fmt.Fprint(output, controller.GetAllHabits())
+		fmt.Fprintln(output, controller.GetAllHabits())
 		return
 	}
 
@@ -76,6 +77,39 @@ Option Flags:`)
 		return
 	}
 	fmt.Fprintln(output, h)
+}
+
+func RunServer(args []string, output io.Writer) {
+	if len(args) == 0 {
+		fmt.Fprintln(output, "no address provided")
+		return
+	}
+	if len(args) > 1 {
+		fmt.Fprintln(output, "too many args provided")
+		return
+	}
+	homeDir, err := homedir.Dir()
+	if err != nil {
+		fmt.Fprintln(output, err)
+		return
+	}
+	store, err := OpenDBStore(homeDir + "/.habitTracker.db")
+	if err != nil {
+		fmt.Fprintln(output, err)
+		return
+	}
+	controller, err := NewController(store)
+	if err != nil {
+		fmt.Fprintln(output, err)
+		return
+	}
+	server, err := NewServer(&controller, args[0])
+	if err != nil {
+		fmt.Fprintln(output, err)
+		return
+	}
+	fmt.Fprintln(output, "Starting HTTP server")
+	server.Run()
 }
 
 func storeFactory(storeType string, dir string) (*Store, error) {

@@ -2,9 +2,14 @@ package habit_test
 
 import (
 	"bytes"
+	"fmt"
 	"github.com/crmejia/habit"
+	"github.com/phayes/freeport"
+	"io/ioutil"
+	"net/http"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestRunCLIShowsUsageHelpNoArgs(t *testing.T) {
@@ -131,4 +136,67 @@ func TestRunCLIShowsErrorUsageHelpInvalidStoreType(t *testing.T) {
 	if !strings.Contains(got, "Usage") {
 		t.Errorf("Invalid frecuency should print usage Message got: %s", got)
 	}
+}
+
+func TestRunServerShowsErrorOnWrongArgs(t *testing.T) {
+	t.Parallel()
+	const noAddressError = "no address provided"
+	const tooManyArgsError = "too many args provided"
+	testCases := []struct {
+		name string
+		args []string
+		want string
+	}{
+		{name: "nil args", args: nil, want: noAddressError},
+		{name: "empty args", args: []string{}, want: noAddressError},
+		{name: "too many args", args: []string{"blah", "blah"}, want: tooManyArgsError},
+	}
+
+	for _, tc := range testCases {
+		got := bytes.Buffer{}
+		habit.RunServer(tc.args, &got)
+		if got.String() != tc.want {
+			t.Errorf("%s should fail with %s, got: %s", tc.name, noAddressError, got.String())
+		}
+	}
+}
+func TestRunServerStartsServer(t *testing.T) {
+	t.Parallel()
+	freePort, err := freeport.GetFreePort()
+	address := fmt.Sprintf("%s:%d", localHostAddress, freePort)
+	args := []string{address}
+	output := bytes.Buffer{}
+	go habit.RunServer(args, &output)
+
+	address = "http://" + address + "?habit=piano"
+	resp, err := retryHttpGet(address)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("Want Status %d, got: %d", http.StatusNotFound, resp.StatusCode)
+	}
+
+	want := "piano"
+	got, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Errorf("Not able to parse response")
+	}
+	if !strings.Contains(string(got), want) {
+		t.Errorf("want response body to be:\n %s \ngot:\n %s", want, got)
+	}
+}
+func retryHttpGet(address string) (*http.Response, error) {
+	resp, err := http.Get(address)
+	for err != nil {
+		switch {
+		//todo identify correct error or maybe http response code? since it's unavailable API
+		case strings.Contains(err.Error(), "connection refused"):
+			time.Sleep(5 * time.Millisecond)
+			resp, err = http.Get(address)
+		default:
+			return resp, err
+		}
+	}
+	return resp, nil
 }

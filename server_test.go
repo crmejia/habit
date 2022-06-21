@@ -9,7 +9,6 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
-	"time"
 )
 
 const (
@@ -231,16 +230,10 @@ func TestServer_RunReturnsBadRequest(t *testing.T) {
 		t.Fatal(err)
 	}
 	go server.Run()
-	resp, err := http.Get("http://" + address)
-	for err != nil {
-		time.Sleep(5 * time.Millisecond)
-		resp, err = http.Get("http://" + address)
-	}
+	resp, err := retryHttpGet("http://" + address)
 	if err != nil {
 		t.Fatal(err)
-	}
-	if err != nil {
-		t.Fatal(err)
+
 	}
 	if resp.StatusCode != http.StatusBadRequest {
 		t.Errorf("Want Status %d, got: %d", http.StatusNotFound, resp.StatusCode)
@@ -273,15 +266,8 @@ func TestServer_RunReturnsHabit(t *testing.T) {
 		t.Fatal(err)
 	}
 	go server.Run()
-	resp, err := http.Get("http://" + address + "?habit=piano")
+	resp, err := retryHttpGet("http://" + address + "?habit=piano")
 	for err != nil {
-		time.Sleep(5 * time.Millisecond)
-		resp, err = http.Get("http://" + address)
-	}
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err != nil {
 		t.Fatal(err)
 	}
 	if resp.StatusCode != http.StatusOK {
