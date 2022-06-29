@@ -19,8 +19,14 @@ func TestNewHttpServer(t *testing.T) {
 	t.Parallel()
 
 	store := habit.OpenMemoryStore()
-	controller, _ := habit.NewController(&store)
-	server, _ := habit.NewServer(&controller, localHostAddress)
+	controller, err := habit.NewController(&store)
+	if err != nil {
+		t.Fatal(err)
+	}
+	server, err := habit.NewServer(&controller, localHostAddress)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	if server.Server == nil {
 		t.Errorf("Tracker should not be nil")
@@ -30,9 +36,15 @@ func TestNewHttpServer(t *testing.T) {
 func TestNewServerWithNonDefaultAddress(t *testing.T) {
 	t.Parallel()
 	store := habit.OpenMemoryStore()
-	controller, _ := habit.NewController(&store)
+	controller, err := habit.NewController(&store)
+	if err != nil {
+		t.Fatal(err)
+	}
 	want := "http://test.net:8080"
-	server, _ := habit.NewServer(&controller, want)
+	server, err := habit.NewServer(&controller, want)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	got := server.Server.Addr
 	if want != got {
@@ -43,8 +55,11 @@ func TestNewServerWithNonDefaultAddress(t *testing.T) {
 func TestNewServerReturnsErrorOnEmptyAddress(t *testing.T) {
 	t.Parallel()
 	store := habit.OpenMemoryStore()
-	controller, _ := habit.NewController(&store)
-	_, err := habit.NewServer(&controller, "")
+	controller, err := habit.NewController(&store)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = habit.NewServer(&controller, "")
 	if err == nil {
 		t.Error("want NewController to return error on nil store")
 	}
@@ -67,8 +82,14 @@ func TestHabitHandlerReturnsHabit(t *testing.T) {
 	store.Habits["piano"] = &habit.Habit{
 		Name: "piano",
 	}
-	controller, _ := habit.NewController(&store)
-	server, _ := habit.NewServer(&controller, localHostAddress)
+	controller, err := habit.NewController(&store)
+	if err != nil {
+		t.Fatal(err)
+	}
+	server, err := habit.NewServer(&controller, localHostAddress)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	handler := server.HandleIndex()
 	handler(recorder, req)
@@ -118,8 +139,14 @@ func TestHandleIndexWithGibberishReturns400(t *testing.T) {
 func TestServer_HabitHandleFrequency(t *testing.T) {
 	t.Parallel()
 	store := habit.OpenMemoryStore()
-	controller, _ := habit.NewController(&store)
-	server, _ := habit.NewServer(&controller, localHostAddress)
+	controller, err := habit.NewController(&store)
+	if err != nil {
+		t.Fatal(err)
+	}
+	server, err := habit.NewServer(&controller, localHostAddress)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	testCases := []struct {
 		name   string
@@ -153,8 +180,14 @@ func TestHandleAllReturnsAllHabits(t *testing.T) {
 		"piano":   {Name: "piano"},
 		"reading": {Name: "reading"},
 	}
-	controller, _ := habit.NewController(&store)
-	server, _ := habit.NewServer(&controller, localHostAddress)
+	controller, err := habit.NewController(&store)
+	if err != nil {
+		t.Fatal(err)
+	}
+	server, err := habit.NewServer(&controller, localHostAddress)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	handler := server.HandleAll()
 	handler(recorder, req)
@@ -179,8 +212,14 @@ func TestRouting(t *testing.T) {
 		"piano":   {Name: "piano"},
 		"reading": {Name: "reading"},
 	}
-	controller, _ := habit.NewController(&store)
-	habitServer, _ := habit.NewServer(&controller, localHostAddress)
+	controller, err := habit.NewController(&store)
+	if err != nil {
+		t.Fatal(err)
+	}
+	habitServer, err := habit.NewServer(&controller, localHostAddress)
+	if err != nil {
+		t.Fatal(err)
+	}
 	testServer := httptest.NewServer(habitServer.Routes())
 	defer testServer.Close()
 	testCases := []struct {

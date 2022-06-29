@@ -109,10 +109,13 @@ func TestController_HandleUpdatesStreaksDueDateCorrectly(t *testing.T) {
 func TestController_HandleCreatesErrorsOnNoInterval(t *testing.T) {
 	t.Parallel()
 	store := habit.OpenMemoryStore()
-	controller, _ := habit.NewController(&store)
+	controller, err := habit.NewController(&store)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	newHabit := habit.Habit{Name: "piano"}
-	_, err := controller.Handle(&newHabit)
+	_, err = controller.Handle(&newHabit)
 	if err == nil {
 		t.Errorf("expected create new habit with not interval to return error")
 	}
@@ -121,10 +124,13 @@ func TestController_HandleCreatesErrorsOnNoInterval(t *testing.T) {
 func TestController_HandleCreatesHabit(t *testing.T) {
 	t.Parallel()
 	store := habit.OpenMemoryStore()
-	controller, _ := habit.NewController(&store)
+	controller, err := habit.NewController(&store)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	newHabit := habit.Habit{Name: "piano", Frequency: habit.DailyInterval}
-	_, err := controller.Handle(&newHabit)
+	_, err = controller.Handle(&newHabit)
 	if err != nil {
 		t.Errorf("expected handle to return no errors, got: %s", err)
 	}
@@ -145,7 +151,10 @@ func TestController_AllHabits(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		controller, _ := habit.NewController(&tc.store)
+		controller, err := habit.NewController(&tc.store)
+		if err != nil {
+			t.Fatal(err)
+		}
 		got := controller.GetAllHabits()
 		if !strings.Contains(got, tc.want) {
 			t.Errorf("want output to contain %s, got:\n    %s", tc.want, got)

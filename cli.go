@@ -26,6 +26,7 @@ Option Flags:`)
 	homeDir, err := homedir.Dir()
 	if err != nil {
 		fmt.Fprintln(output, err)
+		return
 	}
 	storeDir := flagSet.String("d", homeDir, "Set the store directory.")
 
