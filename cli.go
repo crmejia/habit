@@ -53,7 +53,7 @@ Option Flags:`)
 		flagSet.Usage()
 		return
 	}
-	controller, err := NewController(*store)
+	controller, err := NewController(store)
 	if err != nil {
 		fmt.Fprintln(output, err)
 		flagSet.Usage()
@@ -114,22 +114,17 @@ func RunServer(args []string, output io.Writer) {
 	server.Run()
 }
 
-func storeFactory(storeType string, dir string) (*Store, error) {
-	var opener func(string) (Store, error)
-	var source string
+func storeFactory(storeType string, dir string) (store Store, err error) {
 	switch storeType {
 	case "db":
-		opener = OpenDBStore
-		source = dir + "/.habitTracker.db"
+		store, err = OpenDBStore(dir + "/.habitTracker.db")
 	case "file":
-		opener = OpenFileStore
-		source = dir + "/.habitTracker"
+		store, err = OpenFileStore(dir + "/.habitTracker")
 	default:
 		return nil, fmt.Errorf("unknown store type %s", storeType)
 	}
-	store, err := opener(source)
 	if err != nil {
 		return nil, err
 	}
-	return &store, nil
+	return store, nil
 }
